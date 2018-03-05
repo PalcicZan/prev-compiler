@@ -96,8 +96,9 @@ public class Main {
 				// Lexical analysis.
 				if (cmdLine.get("--target-phase").equals("lexan")) {
 					try (LexAn lexan = new LexAn()) {
-						while (lexan.lexer().token != Term.EOF) {
-						}
+						while (lexan.lexer().token != Term.EOF) {}
+					} catch (Report.Error e){
+						throw new Report.Error("Compilation stopped.");
 					}
 					break;
 				}

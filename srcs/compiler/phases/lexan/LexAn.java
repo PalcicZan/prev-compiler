@@ -13,25 +13,28 @@ import compiler.phases.*;
  */
 public class LexAn extends Phase {
 
+	/** Settings for warning/errors and debug mode */
+	private final boolean debug = false;
+	private final boolean completePhase = true;
+
 	/** The name of the source file. */
 	private final String srcFileName;
 
 	/** The source file reader. */
-	private final Reader srcFile;
+	private final BufferedReader srcFile;
 
 	/** StringBuilder to build longest lexeme */
 	private StringBuilder lexemeBuilder;
 
-	/** Indentification of column and line number for positioning */
+	/** Identification for column and line for positioning */
 	private int line;
 	private int column;
-	private char currChar;
-	private boolean eof = false;
-
-	/** Hash set of keywords and literals for fast access. */
-	private static final HashMap<String, Term> keywords;
+	/** Current character */
+	private int c;
 
 	// @formatter:off
+	/** Hash set of keywords and literals for fast access. */
+	private static final HashMap<String, Term> keywords;
 	static {
 		keywords = new HashMap<String, Term>();
 		keywords.put("arr", Term.ARR); keywords.put("bool", Term.BOOL); keywords.put("char", Term.CHAR);
@@ -42,9 +45,7 @@ public class LexAn extends Phase {
 		keywords.put("var", Term.VAR); keywords.put("void", Term.VOID); keywords.put("where", Term.WHERE);
 		keywords.put("while", Term.WHILE);
 	}
-
 	private static final HashMap<String, Term> symbols;
-
 	static {
 		symbols = new HashMap<String, Term>();
 		symbols.put("!", Term.NOT); symbols.put("|", Term.IOR); symbols.put("^", Term.XOR);
@@ -59,7 +60,6 @@ public class LexAn extends Phase {
 		symbols.put("}", Term.RBRACE);
 	}
 	private static final HashMap<String, Term> literalsConst;
-
 	static {
 		literalsConst = new HashMap<String, Term>();
 		literalsConst.put("none", Term.VOIDCONST); literalsConst.put("true", Term.BOOLCONST);
@@ -76,13 +76,18 @@ public class LexAn extends Phase {
 		srcFileName = compiler.Main.cmdLineArgValue("--src-file-name");
 		try {
 			srcFile = new BufferedReader(new FileReader(srcFileName));
-			srcFile.mark(2);
+			// read first character in advance
+			try {
+				column = 0;
+				line = 1;
+				c = readNext();
+			} catch (EOFException ___) {
+				Report.warning("Source file '" + this.srcFileName + "' is empty.");
+			}
 		} catch (IOException ___) {
 			throw new Report.Error("Cannot open source file '" + srcFileName + "'.");
 		}
 		lexemeBuilder = new StringBuilder();
-		column = 1;
-		line = 1;
 	}
 
 	/**
@@ -111,35 +116,49 @@ public class LexAn extends Phase {
 		super.close();
 	}
 
-	// --- LEXER ---
+	/**
+	 *
+	 *
+	 * */
 	private char readNext() throws IOException {
-		int currChar = srcFile.read();
-
-		// check if non-ascii and skip
-		while (128 < currChar) {
-			currChar = srcFile.read();
-			column++;
-			Report.warning(new Location(line, column), "Skipping non ascii character " + currChar);
-		}
-
 		// check if new line
-		if (currChar == '\n') {
-			column = 0;
+		if (c == '\n') {
+			column = 1;
 			line++;
 		} else {
 			column++;
 		}
 
+		c = srcFile.read();
+
+		// check if non-ascii - warning and skip\error
+		while (128 < c) {
+			report(new Location(line, column++), "Non ASCII character: " + (char) c + " [" + c + "]");
+			c = srcFile.read();
+		}
+
 		// check if end of file
-		if (currChar == -1) {
-			eof = true;
+		if (c == -1) {
 			throw new EOFException();
 		}
 
-		return (char) currChar;
+		return (char) c;
 	}
 
-	private enum State {INITIAL, IDENTIFIER, LITERALCHAR, LITERALINT, SYMBOL, LITERALCHAREND, FINAL}
+
+	/** Set warning message and continue compilation or throw an error */
+	private void report(Location location, String msg) {
+		if (completePhase) {
+			Report.warning(location, msg);
+		} else {
+			throw new Report.Error(location, msg);
+		}
+	}
+
+	/** States of state machine */
+	private enum State {
+		INITIAL, IDENTIFIER, LITERALCHAR, LITERALINT, SYMBOL, LITERALCHAREND, ADVANCEANDFINISH
+	}
 
 	/**
 	 * Performs the lexical analysis of the source file.
@@ -162,15 +181,16 @@ public class LexAn extends Phase {
 		int begLine = line;
 		int endColumn = column;
 		int endLine = line;
+
+		// end of file
+		if (c == -1) return new Symbol(Term.EOF, "", new Location(line, column));
+
+		char currChar = (char) c;
+		State state = State.INITIAL;
 		try {
-			if (eof) {
-				return new Symbol(Term.EOF, "", new Location(line, column, endLine, endColumn));
-			}
-			currChar = (column == 1 && line == 1) ? readNext() : currChar;
-			// System.out.println("Curr: " + currChar);
+
 			// skip comments and white spaces
 			while (currChar == '#' || currChar == ' ' || currChar == '\t' || currChar == '\r' || currChar == '\n') {
-
 				if (currChar == '#') {
 					while (currChar != '\n') {
 						currChar = readNext();
@@ -181,7 +201,6 @@ public class LexAn extends Phase {
 
 			begColumn = column;
 			begLine = line;
-			State state = State.INITIAL;
 
 			boolean step = true;
 			boolean isAlphaUnderscore;
@@ -194,25 +213,24 @@ public class LexAn extends Phase {
 								('A' <= currChar && currChar <= 'Z') ||
 								currChar == '_';
 						if (isAlphaUnderscore) {
-							lexemeBuilder.append(currChar);
 							token = Term.IDENTIFIER;
 							state = State.IDENTIFIER;
 							// start of literal of type char
 						} else if (currChar == '\'') {
-							lexemeBuilder.append(currChar);
 							state = State.LITERALCHAR;
+							token = Term.CHARCONST;
 							// start of a symbol
 						} else if (symbols.containsKey(String.valueOf(currChar))) {
-							lexemeBuilder.append(currChar);
 							token = symbols.get(String.valueOf(currChar));
 							state = State.SYMBOL;
 							// start of literal of type int
 						} else if ('0' <= currChar && currChar <= '9') {
-							lexemeBuilder.append(currChar);
 							token = Term.INTCONST;
 							state = State.LITERALINT;
 						} else {
-							step = false;
+							token = Term.ERROR;
+							report(new Location(line, column), "Unknown character: " + currChar);
+							state = State.ADVANCEANDFINISH;
 						}
 						break;
 					case IDENTIFIER:
@@ -220,7 +238,6 @@ public class LexAn extends Phase {
 								('A' <= currChar && currChar <= 'Z') ||
 								currChar == '_';
 						if (isAlphaUnderscore || ('0' <= currChar && currChar <= '9')) {
-							lexemeBuilder.append(currChar);
 							token = Term.IDENTIFIER;
 							state = State.IDENTIFIER;
 						} else {
@@ -230,54 +247,54 @@ public class LexAn extends Phase {
 					case SYMBOL:
 						if (currChar == '=' && (lexemeBuilder.charAt(0) == '!' || (lexemeBuilder.charAt(0) == '<') ||
 								(lexemeBuilder.charAt(0) == '>') || (lexemeBuilder.charAt(0) == '='))) {
-							lexemeBuilder.append(currChar);
 							token = symbols.get(lexemeBuilder.toString());
-							state = State.FINAL;
+							state = State.ADVANCEANDFINISH;
 						} else {
 							step = false;
 						}
 						break;
 					case LITERALCHAR:
 						if (currChar < ' ' || '~' < currChar) {
-							throw new Report.Error(new Location(endLine, endColumn), "Wrong character code.");
+							report(new Location(line, column), "Not valid character: " + (int) currChar + ".");
 						}
-						lexemeBuilder.append(currChar);
 						token = Term.CHARCONST;
 						state = State.LITERALCHAREND;
-						//step = true;
 						break;
 					case LITERALCHAREND:
 						if (currChar != '\'') {
-							throw new Report.Error(new Location(endLine, endColumn), "Char const too long.");
+							report(new Location(begLine, begColumn, line, column), "Char const too long/not closed.");
 						}
-						lexemeBuilder.append(currChar);
 						token = Term.CHARCONST;
-						state = State.FINAL;
+						state = State.ADVANCEANDFINISH;
 						break;
 					case LITERALINT:
 						if ('0' <= currChar && currChar <= '9') {
-							lexemeBuilder.append(currChar);
 							token = Term.INTCONST;
 							state = State.LITERALINT;
 						} else {
 							step = false;
 						}
 						break;
-					case FINAL:
+					case ADVANCEANDFINISH:
 						step = false;
-					default:
 				}
 
-				// read next character
+				// remember position and read next character
 				if (step) {
+					lexemeBuilder.append(currChar);
 					endColumn = column;
 					endLine = line;
 					currChar = readNext();
 				}
 			}
-		} catch (EOFException e) {
-			// TODO: check if EOF is okay
-		} catch (IOException e) {
+		} catch (EOFException ___) {
+			// Not enclosed
+			if (state == State.LITERALCHAR || state == State.LITERALCHAREND) {
+				report(new Location(begLine, begColumn, endLine, endColumn), "Char constant not closed.");
+			} else if (token == Term.EOF) {
+				return new Symbol(token, "", new Location(line, column));
+			}
+		} catch (IOException ___) {
 			throw new Report.InternalError();
 		}
 
@@ -289,7 +306,7 @@ public class LexAn extends Phase {
 			token = literalsConst.get(lexeme);
 		}
 
-		//System.out.println("Lex: " + lexeme);
+		if (debug) System.out.println("Lex: " + lexeme);
 		return new Symbol(token, lexeme, new Location(begLine, begColumn, endLine, endColumn));
 	}
 

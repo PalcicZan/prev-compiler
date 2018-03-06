@@ -8,7 +8,7 @@ package compiler.phases.lexan;
  */
 public enum Term {
 
-	EOF,
+	EOF, ERROR,
 	
 	IOR,
 	XOR,

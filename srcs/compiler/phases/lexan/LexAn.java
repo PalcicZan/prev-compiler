@@ -16,6 +16,7 @@ public class LexAn extends Phase {
 	/** Settings for warning/errors and debug mode. */
 	private final boolean debug = false;
 	private final boolean completePhase = false;
+	private final boolean nonAsciiComments = false;
 
 	/** The name of the source file. */
 	private final String srcFileName;
@@ -129,8 +130,11 @@ public class LexAn extends Phase {
 	 * Reads next character.
 	 * Modifies column/line number accordingly and
 	 * remembers current character for easy access at next symbol.
-	 * */
-	private void readNext() {
+	 * In case of allowing non ASCII characters in the comments you can pass parameter to method.
+	 */
+	private void readNext() { readNext(false); }
+
+	private void readNext(boolean allowNonAscii) {
 		// check if new line
 		if (currChar == '\n') {
 			column = 1;
@@ -144,12 +148,12 @@ public class LexAn extends Phase {
 		try {
 			currChar = srcFile.read();
 
-			// check if non-ascii - warning and skip or show error
-			while (128 < currChar) {
-				report(new Location(line, column++), "[" + (char) currChar + ", " + currChar + "]: Non ASCII character.");
+			// check if non-ascii - warning and skip or throw error
+			while (!allowNonAscii && 128 < currChar) {
+				report(new Location(line, column++),
+					"[" + (char) currChar + ", " + currChar + "]: Non ASCII character.");
 				currChar = srcFile.read();
 			}
-
 		} catch (IOException ___) {
 			throw new Report.InternalError();
 		}
@@ -183,14 +187,13 @@ public class LexAn extends Phase {
 		int endColumn = column;
 		int endLine = line;
 
-		//int currChar = c;
 		State state = State.INITIAL;
 
 		// skip comments and white spaces
 		while (currChar == '#' || currChar == ' ' || currChar == '\t' || currChar == '\r' || currChar == '\n') {
 			if (currChar == '#') {
 				while (currChar != '\n' && currChar != -1) {
-					readNext();
+					readNext(nonAsciiComments);    // change to readNext(true) if non-ascii is allowed in the comments
 				}
 			}
 			readNext();
@@ -226,7 +229,8 @@ public class LexAn extends Phase {
 						state = State.LITERALINT;
 					} else {
 						token = Term.ERROR; // error could be general not just in this case
-						report(new Location(line, column), "[" + (char) currChar + ", " + currChar + "]: Unknown character!");
+						report(new Location(line, column),
+							"[" + (char) currChar + ", " + currChar + "]: Unknown character in this context!");
 						state = State.ADVANCEANDFINISH;
 					}
 					break;
@@ -252,14 +256,16 @@ public class LexAn extends Phase {
 					break;
 				case LITERALCHAR:
 					if (currChar < ' ' || '~' < currChar) {
-						report(new Location(line, column), "[" + (char) currChar + ", " + currChar + "]: Invalid character!");
+						report(new Location(line, column),
+							"[" + (char) currChar + ", " + currChar + "]: Invalid character!");
 					}
 					token = Term.CHARCONST;
 					state = State.LITERALCHAREND;
 					break;
 				case LITERALCHAREND:
 					if (currChar != '\'') {
-						report(new Location(begLine, begColumn, line, column), "[" + (char) currChar + ", " + currChar + "]: Char const not closed. Expected \"'\" character.");
+						report(new Location(begLine, begColumn, line, column),
+							"[" + (char) currChar + ", " + currChar + "]: Char const not closed. Expected \"'\" character.");
 					}
 					token = Term.CHARCONST;
 					state = State.ADVANCEANDFINISH;
@@ -289,7 +295,9 @@ public class LexAn extends Phase {
 		if (currChar == -1) {
 			// Not enclosed
 			if (state == State.LITERALCHAR || state == State.LITERALCHAREND) {
-				report(new Location(begLine, begColumn, endLine, endColumn), "[" + (char) currChar + ", " + currChar + "]: Char constant not closed. Expected ['] character.");
+				report(new Location(begLine, begColumn, endLine, endColumn),
+					"[" + (char) currChar + ", " + currChar +
+						"]: Char constant not closed. Expected \"'\" character.");
 			} else if (token == Term.EOF) {
 				return new Symbol(token, "", new Location(line, column));
 			}

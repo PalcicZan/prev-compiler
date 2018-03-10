@@ -1,9 +1,9 @@
-# IDE ignores
+# IDE
 .idea/
 prev-compiler.iml
 
 # Output
 out/
 
-# Data sets
-data/
+# Data
+data/tests/

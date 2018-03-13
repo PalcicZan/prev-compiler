@@ -42,6 +42,12 @@ public class SynAn extends Phase {
 	/** The lookahead buffer (of length 1). */
 	private Symbol currSymb = null;
 
+	/** Expressions CFG nonterminals for different levels of precedence */
+	private static final Nont[] exprNont = {
+		Nont.ExprXorOr, Nont.ExprAnd, Nont.ExprCompare, Nont.ExprAddSub,
+		Nont.ExprMulDiv, Nont.ExprUnary, Nont.ExprAccess
+	};
+
 	/**
 	 * Appends the current symbol in the lookahead buffer to the node of the
 	 * derivation tree that is currently being expanded by the parser.
@@ -102,12 +108,12 @@ public class SynAn extends Phase {
 
 
 	private void dump(String msg) {
-		if (debug) System.out.println(msg + ": '"  + currSymb.lexeme + "' (" + currSymb.token  + ").");
+		if (debug) System.out.println(msg + ": '" + currSymb.lexeme + "' (" + currSymb.token + ").");
 	}
 
 
 	private void report(Symbol symbol, String msg) {
-		String finalMsg = "Unexpected '" + symbol.lexeme + "' (" + symbol.token  + "): " + msg;
+		String finalMsg = "Unexpected '" + symbol.lexeme + "' (" + symbol.token + "): " + msg;
 		if (completePhase) {
 			Report.warning(symbol.location(), finalMsg);
 		} else {
@@ -115,11 +121,6 @@ public class SynAn extends Phase {
 		}
 	}
 
-
-	private static Nont[] exprNont = {
-		Nont.ExprXorOr, Nont.ExprAnd, Nont.ExprCompare, Nont.ExprAddSub,
-		Nont.ExprMulDiv, Nont.ExprUnary, Nont.ExprAccess
-	};
 	// --- PARSER ---
 
 	private DerNode parseSource() {
@@ -229,7 +230,6 @@ public class SynAn extends Phase {
 				else if (level < 3) report(currSymb, "Not suitable symbol.");
 				currSymb = skip(node);
 				node.add(parseExprOnLevel(level + 1));
-				node.add(parseExprHelper(level));
 				break;
 			case ADD: case SUB:
 				if (level > 4) break;

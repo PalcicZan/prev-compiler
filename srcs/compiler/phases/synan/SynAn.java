@@ -63,7 +63,7 @@ public class SynAn extends Phase {
 	 */
 	private Symbol skip(DerNode node) {
 		if (currSymb != null) {
-			if (debug) System.out.println("Add as a leaf: " + currSymb.token + " [" + currSymb.lexeme + "]");
+			if (debug) System.out.println("Skip: " + currSymb.token + " [" + currSymb.lexeme + "]");
 			node.add(new DerLeaf(currSymb));
 		}
 		return null;
@@ -135,7 +135,7 @@ public class SynAn extends Phase {
 		getNextSymbol();
 		switch (currSymb.token) {
 			case ADD: case SUB:
-			case NOT: case MEM: case NEW: case DEL:
+			case NOT: case MEM: case VAL: case NEW: case DEL:
 			case IDENTIFIER:
 			case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
 			case LPARENTHESIS: case LBRACE: case LBRACKET:
@@ -152,11 +152,11 @@ public class SynAn extends Phase {
 	private DerNode parseExprOnLevel(int level) {
 		DerNode node = new DerNode(exprNont[level - 1]);
 		getNextSymbol();
-		dump("Expr level [" + level + "]");
+		dump("Parse expr [" + level + "]");
 		if (level < 6) {
 			switch (currSymb.token) {
 				case ADD: case SUB:
-				case NOT: case MEM: case NEW: case DEL:
+				case NOT: case MEM: case VAL: case NEW: case DEL:
 				case IDENTIFIER:
 				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
 				case LPARENTHESIS: case LBRACE: case LBRACKET:
@@ -169,9 +169,9 @@ public class SynAn extends Phase {
 		} else if (level == 6) {
 			switch (currSymb.token) {
 				case ADD: case SUB: case NOT:
-				case MEM: case DEL:
+				case MEM: case VAL: case DEL:
 					currSymb = skip(node);
-					node.add(parseExprOnLevel(level + 1));
+					node.add(parseExprOnLevel(level));
 					break;
 				case NEW:
 					currSymb = skip(node);
@@ -181,12 +181,12 @@ public class SynAn extends Phase {
 					currSymb = skip(node);
 					node.add(parseType());
 					addLeafSymbol(node, Term.RBRACKET, "Type cast not closed with ']'");
-					node.add(parseExprOnLevel(level + 1));
+					node.add(parseExprOnLevel(level));
 					break;
 				case IDENTIFIER:
 				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
 				case LBRACE: case LPARENTHESIS:
-					node.add(parseExprOnLevel(level + 1));
+					node.add(parseExprOnLevel(level+1));
 					break;
 				default:
 					throw new Report.Error("Not an expression [" + level + "].");
@@ -210,7 +210,7 @@ public class SynAn extends Phase {
 	private DerNode parseExprHelper(int level) {
 		DerNode node = new DerNode(exprNont[level - 1]);
 		getNextSymbol();
-		dump("Expr level helper [" + level + "]");
+		dump("Parse exprHelp [" + level + "]");
 		switch (currSymb.token) {
 			case IOR: case XOR:
 				if (level > 1) break;
@@ -317,8 +317,9 @@ public class SynAn extends Phase {
 		getNextSymbol();
 		dump("Parse arg");
 		switch (currSymb.token) {
-			case ADD: case SUB: case BOOLCONST: case INTCONST: case CHARCONST: case PTRCONST: case VOIDCONST:
-			case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NEQ: case MEM: case NEW: case DEL: case LBRACKET:
+			case ADD: case SUB: case BOOLCONST: case INTCONST: case CHARCONST: case PTRCONST:
+			case VOIDCONST:	case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NEQ:
+			case MEM: case VAL: case NEW: case DEL: case LBRACKET:
 				// function call with args
 				node.add(parseExpr());
 				node.add(parseArgExtension());
@@ -459,8 +460,9 @@ public class SynAn extends Phase {
 		getNextSymbol();
 		dump("Parse stmt");
 		switch (currSymb.token) {
-			case ADD: case SUB: case BOOLCONST: case INTCONST: case CHARCONST: case PTRCONST: case VOIDCONST:
-			case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NOT: case MEM: case NEW: case DEL: case LBRACKET:
+			case ADD: case SUB: case BOOLCONST: case INTCONST: case CHARCONST: case PTRCONST:
+			case VOIDCONST: case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NOT:
+			case VAL: case MEM: case NEW: case DEL: case LBRACKET:
 				node.add(parseExpr());
 				node.add(parseAssign());
 				break;

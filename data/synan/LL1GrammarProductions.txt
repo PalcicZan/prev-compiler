@@ -1,0 +1,81 @@
+# expressions with precedence
+expr -> expr2 expr1' .
+expr1' -> .
+expr1' -> bitor expr2 expr1' | ^ expr2 expr1' .
+
+expr2 -> expr3 expr2' .
+expr2' -> .
+expr2' -> and expr3 expr2' .
+
+expr3 -> expr4 expr3' .
+expr3' -> .
+expr3' -> == expr4 .
+expr3' -> != expr4 .
+expr3' -> <= expr4 .
+expr3' -> >= expr4 .
+expr3' -> < expr4 .
+expr3' -> > expr4 .
+
+expr4 -> expr5 expr4' .
+expr4' -> .
+expr4' -> + expr5 expr4' .
+expr4' -> - expr5 expr4' .
+
+expr5 -> expr6 expr5' .
+expr5' -> .
+expr5' -> * expr6 expr5' .
+expr5' -> / expr6 expr5' .
+expr5' -> % expr6 expr5' .
+
+
+expr6 -> expr7 .
+expr6 -> ! expr6 .
+expr6 -> + expr6 .
+expr6 -> - expr6 .
+expr6 -> dollar expr6 .
+expr6 -> @ expr6 .
+expr6 -> new type .
+expr6 -> del expr6 .
+expr6 -> [ type ] expr6 .
+
+expr7 -> term access  .
+access -> dot identifier | [ expr ] | .
+
+# literal
+term -> literal .
+
+term -> ( expr ) .
+
+# identifier
+term -> identifier args .
+args -> ( arg ) | .
+arg -> expr arg' | .
+arg' -> , expr arg' | .
+
+# statement
+term -> leftB stmt stmt' : expr where' rightB .
+
+where' -> where decl decl' | .
+decl' -> ; decl decl' | .
+stmt' -> ; stmt stmt' | .
+
+type -> void | bool | char | int .
+type -> arr [ expr ] type .
+type -> rec ( identifier : type identifiersExtension' ) .
+type -> ptr type .
+type -> identifier .
+
+identifiersExtension' -> , identifier : type identifiersExtension' | .
+
+stmt -> expr assign .
+stmt -> if expr then stmt stmt' else' end .
+stmt -> while expr do stmt stmt' end .
+
+assign -> = expr | .
+else' -> else stmt stmt' | .
+
+decl -> typ identifier : type .
+decl -> var identifier : type .
+decl -> fun identifier ( identifiers' ) : type assign .
+
+identifiers' -> identifier : type identifiersExtension' | .

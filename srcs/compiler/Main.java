@@ -110,6 +110,9 @@ public class Main {
 				try (SynAn synAn = new SynAn()) {
 					synAn.parser();
 				}
+
+				Report.info("Syntax analysis complete.");
+
 				if (cmdLine.get("--target-phase").equals("synan"))
 					break;
 

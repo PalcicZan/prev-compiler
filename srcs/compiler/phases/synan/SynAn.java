@@ -13,8 +13,8 @@ import compiler.phases.synan.dertree.*;
 public class SynAn extends Phase {
 
 
-	private static final boolean debug = true;
-	private static final boolean simplify = true;
+	private static final boolean debug = false;
+	private final boolean completePhase = false;
 
 	/** The constructed derivation tree. */
 	private static DerTree derTree = null;
@@ -102,9 +102,24 @@ public class SynAn extends Phase {
 
 
 	private void dump(String msg) {
-		if (debug) System.out.println(msg + ": " + currSymb.token);
+		if (debug) System.out.println(msg + ": '"  + currSymb.lexeme + "' (" + currSymb.token  + ").");
 	}
 
+
+	private void report(Symbol symbol, String msg) {
+		String finalMsg = "Unexpected '" + symbol.lexeme + "' (" + symbol.token  + "): " + msg;
+		if (completePhase) {
+			Report.warning(symbol.location(), finalMsg);
+		} else {
+			throw new Report.Error(symbol.location(), finalMsg);
+		}
+	}
+
+
+	private static Nont[] exprNont = {
+		Nont.ExprXorOr, Nont.ExprAnd, Nont.ExprCompare, Nont.ExprAddSub,
+		Nont.ExprMulDiv, Nont.ExprUnary, Nont.ExprAccess
+	};
 	// --- PARSER ---
 
 	private DerNode parseSource() {
@@ -118,89 +133,44 @@ public class SynAn extends Phase {
 		DerNode node = new DerNode(Nont.Expr);
 		getNextSymbol();
 		switch (currSymb.token) {
-			case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
-				// literal
-				node.add(parseExprOnLevel(2));
-				node.add(parseExprHelper(1));
-				break;
-			case IDENTIFIER:
-				node.add(parseExprOnLevel(2));
-				node.add(parseExprHelper(1));
-				break;
-			case LBRACE:
-				node.add(parseExprOnLevel(2));
-				node.add(parseExprHelper(1));
-				break;
 			case ADD: case SUB:
-				node.add(parseExprOnLevel(2));
-				node.add(parseExprHelper(1));
-				break;
-			case NOT: case MEM: case NEW: case DEL: case LBRACKET:
+			case NOT: case MEM: case NEW: case DEL:
+			case IDENTIFIER:
+			case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
+			case LPARENTHESIS: case LBRACE: case LBRACKET:
 				node.add(parseExprOnLevel(2));
 				node.add(parseExprHelper(1));
 				break;
 			default:
-				throw new Report.Error("Not an expression.");
+				report(currSymb, "Expressions cannot start with that symbol.");
 		}
 		return node;
 	}
 
-	// Unary operators
-	// case NOT: case MEM: case NEW: case DEL: case LBRACKET:
 
 	private DerNode parseExprOnLevel(int level) {
-		DerNode node = new DerNode(Nont.Expr);
+		DerNode node = new DerNode(exprNont[level - 1]);
 		getNextSymbol();
-
 		dump("Expr level [" + level + "]");
 		if (level < 6) {
 			switch (currSymb.token) {
-				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
-					// literal
-					node.add(parseExprOnLevel(level + 1));
-					node.add(parseExprHelper(level));
-					break;
-				case IDENTIFIER:
-					node.add(parseExprOnLevel(level + 1));
-					node.add(parseExprHelper(level));
-					break;
-				case LBRACE:
-					node.add(parseExprOnLevel(level + 1));
-					node.add(parseExprHelper(level));
-					break;
-				case NOT: case MEM: case NEW: case DEL: case LBRACKET:
-					node.add(parseExprOnLevel(level + 1));
-					node.add(parseExprHelper(level));
-					break;
 				case ADD: case SUB:
+				case NOT: case MEM: case NEW: case DEL:
+				case IDENTIFIER:
+				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
+				case LPARENTHESIS: case LBRACE: case LBRACKET:
 					node.add(parseExprOnLevel(level + 1));
 					node.add(parseExprHelper(level));
-					break;
-				case RPARENTHESIS: case COMMA: case COLON: case RBRACE: case WHERE: case SEMIC:
-				case ASSIGN: case END: case ELSE: case DO: case EOF: case RBRACKET:
-					//case THEN:
 					break;
 				default:
-					throw new Report.Error("Not an expression [" + level + "].");
+					report(currSymb, "Not an expression [" + level + "].");
 			}
-		} else {
+		} else if (level == 6) {
 			switch (currSymb.token) {
-				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
-					// literal
-					node.add(parseTerm());
-					node.add(parseAccess());
-					break;
-				case IDENTIFIER:
-					node.add(parseTerm());
-					node.add(parseAccess());
-					break;
-				case LBRACE:
-					node.add(parseTerm());
-					node.add(parseAccess());
-					break;
+				case ADD: case SUB: case NOT:
 				case MEM: case DEL:
 					currSymb = skip(node);
-					node.add(parseTerm());
+					node.add(parseExprOnLevel(level + 1));
 					break;
 				case NEW:
 					currSymb = skip(node);
@@ -209,26 +179,35 @@ public class SynAn extends Phase {
 				case LBRACKET:
 					currSymb = skip(node);
 					node.add(parseType());
-					addLeafSymbol(node, Term.RBRACKET, "Type cast not closed with \"]\"");
+					addLeafSymbol(node, Term.RBRACKET, "Type cast not closed with ']'");
+					node.add(parseExprOnLevel(level + 1));
 					break;
-				case ADD: case SUB: case NOT:
-					currSymb = skip(node);
-					node.add(parseTerm());
+				case IDENTIFIER:
+				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
+				case LBRACE: case LPARENTHESIS:
+					node.add(parseExprOnLevel(level + 1));
 					break;
 				default:
 					throw new Report.Error("Not an expression [" + level + "].");
 			}
-		}
-
-		if (simplify && node.subtree(1).location() == null) {
-			return (DerNode) node.subtree(0);
+		} else if (level == 7) {
+			switch (currSymb.token) {
+				case IDENTIFIER:
+				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
+				case LBRACE: case LPARENTHESIS:
+					node.add(parseTerm());
+					node.add(parseAccess());
+					break;
+				default:
+					report(currSymb, "Not an expression on level: " + level + ".");
+			}
 		}
 		return node;
 	}
 
 
 	private DerNode parseExprHelper(int level) {
-		DerNode node = new DerNode(Nont.Expr1);
+		DerNode node = new DerNode(exprNont[level - 1]);
 		getNextSymbol();
 		dump("Expr level helper [" + level + "]");
 		switch (currSymb.token) {
@@ -240,33 +219,33 @@ public class SynAn extends Phase {
 				break;
 			case AND:
 				if (level > 2) break;
-				else if (level < 2) throw new Report.Error("Not suitable symbol.");
+				else if (level < 2) report(currSymb, "Not suitable symbol.");
 				currSymb = skip(node);
 				node.add(parseExprOnLevel(level + 1));
 				node.add(parseExprHelper(level));
 				break;
 			case EQU: case NEQ: case LEQ: case GEQ: case LTH: case GTH:
 				if (level > 3) break;
-				else if (level < 3) throw new Report.Error("Not suitable symbol.");
+				else if (level < 3) report(currSymb, "Not suitable symbol.");
 				currSymb = skip(node);
 				node.add(parseExprOnLevel(level + 1));
 				node.add(parseExprHelper(level));
 				break;
 			case ADD: case SUB:
 				if (level > 4) break;
-				else if (level < 4) throw new Report.Error("Not suitable symbol.");
+				else if (level < 4) report(currSymb, "Not suitable symbol.");
 				currSymb = skip(node);
 				node.add(parseExprOnLevel(level + 1));
 				node.add(parseExprHelper(level));
 				break;
 			case DIV: case MUL: case MOD:
-				if (level < 5) throw new Report.Error("Not suitable symbol.");
+				if (level < 5) report(currSymb, "Not suitable symbol.");
 				currSymb = skip(node);
 				node.add(parseExprOnLevel(level + 1));
 				node.add(parseExprHelper(level));
 				break;
-			case RPARENTHESIS: case COMMA: case COLON: case RBRACE: case WHERE: case SEMIC:
-			case ASSIGN: case THEN: case END: case ELSE: case DO: case RBRACKET: case EOF:
+			case RBRACKET: case RPARENTHESIS: case RBRACE: case COMMA: case COLON: case SEMIC:
+			case WHERE: case DO: case THEN: case END: case ASSIGN: case ELSE: case EOF:
 				break;
 			default:
 				throw new Report.Error("Not suitable symbol.");
@@ -286,7 +265,7 @@ public class SynAn extends Phase {
 			case LPARENTHESIS:
 				currSymb = skip(node);
 				node.add(parseExpr());
-				addLeafSymbol(node, Term.RPARENTHESIS, "Expression not closed with \")\"");
+				addLeafSymbol(node, Term.RPARENTHESIS, "Expected ')' to enclose enclosed expression.");
 				break;
 			case IDENTIFIER:
 				currSymb = skip(node);
@@ -296,10 +275,13 @@ public class SynAn extends Phase {
 				currSymb = skip(node);
 				node.add(parseStmt());
 				node.add(parseStmtExtention());
-				addLeafSymbol(node, Term.COLON, "Expected colon.");
+				addLeafSymbol(node, Term.COLON, "Expected ':'.");
 				node.add(parseExpr());
 				node.add(parseWhere());
-				addLeafSymbol(node, Term.RBRACE, "Expected right brace.");
+				addLeafSymbol(node, Term.RBRACE, "Expected ']'.");
+				break;
+			default:
+				report(currSymb, "Not suitable symbol to start a term expression.");
 		}
 		return node;
 	}
@@ -314,14 +296,15 @@ public class SynAn extends Phase {
 				// function call with args
 				currSymb = skip(node);
 				node.add(parseArg());
-				addLeafSymbol(node, Term.RPARENTHESIS, "Expression not closed with \")\"");
+				addLeafSymbol(node, Term.RPARENTHESIS, "Expression not closed with ')'.");
 				break;
-			case BOOLCONST: case INTCONST: case CHARCONST: case PTRCONST: case VOIDCONST: case IDENTIFIER:
-			case RBRACE: case NOT: case MEM: case NEW: case DEL: case VOID: case BOOL: case CHAR: case INT:
-			case ARR: case REC: case PTR: case IF: case WHILE: case TYP: case FUN: case VAR:
-				throw new Report.Error("Not suitable symbol as arguments.");
+			case IOR: case XOR: case AND: case EQU: case NEQ: case LEQ: case GEQ: case LTH: case GTH: case ADD:
+			case SUB: case MUL: case DIV: case MOD: case RBRACKET: case RPARENTHESIS: case COMMA: case COLON:
+			case RBRACE: case SEMIC: case WHERE: case ASSIGN: case THEN: case ELSE: case END: case DO: case EOF:
+			case LBRACKET: case DOT:
+				break;
 			default:
-				// identifier access
+				report(currSymb, "Not suitable to start arguments.");
 				break;
 
 		}
@@ -343,7 +326,7 @@ public class SynAn extends Phase {
 			case RPARENTHESIS:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol as arguments.");
+				throw new Report.Error("Not suitable symbol for arguments.");
 		}
 		return node;
 
@@ -363,7 +346,7 @@ public class SynAn extends Phase {
 			case RPARENTHESIS:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol as arguments.");
+				throw new Report.Error("Not suitable symbol for arguments.");
 		}
 		return node;
 
@@ -378,18 +361,18 @@ public class SynAn extends Phase {
 			case LBRACKET:
 				currSymb = skip(node);
 				node.add(parseExpr());
-				addLeafSymbol(node, Term.RBRACKET, "Expression not closed.");
+				addLeafSymbol(node, Term.RBRACKET, "Expected right bracket to enclose element access.");
 				break;
 			case DOT:
 				currSymb = skip(node);
-				addLeafSymbol(node, Term.IDENTIFIER, "Expression not identifier.");
+				addLeafSymbol(node, Term.IDENTIFIER, "Expected identifier to access component.");
 				break;
-			case IOR: case AND: case XOR: case EQU: case NEQ: case LEQ: case GEQ: case LTH: case GTH: case ADD:
+			case IOR: case XOR: case AND: case EQU: case NEQ: case LEQ: case GEQ: case LTH: case GTH: case ADD:
 			case SUB: case MUL: case DIV: case MOD: case RBRACKET: case RPARENTHESIS: case COMMA: case COLON:
 			case RBRACE: case SEMIC: case WHERE: case ASSIGN: case THEN: case ELSE: case END: case DO: case EOF:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol as arguments.");
+				throw new Report.Error("Not suitable symbol for component/element access.");
 		}
 		return node;
 	}
@@ -405,26 +388,26 @@ public class SynAn extends Phase {
 				break;
 			case ARR:
 				currSymb = skip(node);
-				addLeafSymbol(node, Term.LBRACKET, "Array type - Expected left closing bracket.");
+				addLeafSymbol(node, Term.LBRACKET, "Array type; Expected '['.");
 				node.add(parseExpr());
-				addLeafSymbol(node, Term.RBRACKET, "Array type - Expected right closing bracket.");
+				addLeafSymbol(node, Term.RBRACKET, "Array type; Expected ']' to enclose array definition.");
 				node.add(parseType());
 				break;
 			case REC:
 				currSymb = skip(node);
-				addLeafSymbol(node, Term.LPARENTHESIS, "Record type - Expected left closing parenthesis.");
-				addLeafSymbol(node, Term.IDENTIFIER, "Record type - Expected identifier.");
-				addLeafSymbol(node, Term.COLON, "Record type - Expected colon.");
+				addLeafSymbol(node, Term.LPARENTHESIS, "Record type; Expected '('.");
+				addLeafSymbol(node, Term.IDENTIFIER, "Record type; Expected identifier.");
+				addLeafSymbol(node, Term.COLON, "Record type; Expected ':'.");
 				node.add(parseType());
 				node.add(parseIdentifiersExtension());
-				addLeafSymbol(node, Term.RPARENTHESIS, "Record type - Expected right closing parenthesis.");
+				addLeafSymbol(node, Term.RPARENTHESIS, "Record type; Expected ')' at the end of rec type declaration.");
 				break;
 			case PTR:
 				currSymb = skip(node);
 				node.add(parseType());
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for a type.");
+				report(currSymb, "Not suitable symbol for a type.");
 		}
 		return node;
 	}
@@ -435,37 +418,37 @@ public class SynAn extends Phase {
 		getNextSymbol();
 		dump("Parse identifiers");
 		switch (currSymb.token) {
-			case RPARENTHESIS:
-				break; // no identifiers
 			case IDENTIFIER:
 				currSymb = skip(node);
-				addLeafSymbol(node, Term.COLON, "Expected right closing bracket.");
+				addLeafSymbol(node, Term.COLON, "Expected ':'.");
 				node.add(parseType());
 				node.add(parseIdentifiersExtension());
 				break;
+			case RPARENTHESIS:
+				break; // no identifiers
 			default:
-				throw new Report.Error("Not suitable symbol.");
+				report(currSymb, "Not suitable symbol for arguments declaration.");
 		}
 		return node;
 	}
 
 
 	private DerNode parseIdentifiersExtension() {
-		DerNode node = new DerNode(Nont.IdentifiersExtention);
+		DerNode node = new DerNode(Nont.IdentifiersExtension);
 		getNextSymbol();
 		dump("Parse identifiers");
 		switch (currSymb.token) {
-			case RPARENTHESIS:
-				break;
 			case COMMA:
 				currSymb = skip(node);
 				addLeafSymbol(node, Term.IDENTIFIER, "Expected identifier.");
-				addLeafSymbol(node, Term.COLON, "Expected colon.");
+				addLeafSymbol(node, Term.COLON, "Expected ':'.");
 				node.add(parseType());
 				node.add(parseIdentifiersExtension());
 				break;
+			case RPARENTHESIS:
+				break;
 			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
+				report(currSymb, "Not suitable symbol for identifiers.");
 		}
 		return node;
 	}
@@ -477,29 +460,29 @@ public class SynAn extends Phase {
 		dump("Parse stmt");
 		switch (currSymb.token) {
 			case ADD: case SUB: case BOOLCONST: case INTCONST: case CHARCONST: case PTRCONST: case VOIDCONST:
-			case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NEQ: case MEM: case NEW: case DEL: case LBRACKET:
+			case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NOT: case MEM: case NEW: case DEL: case LBRACKET:
 				node.add(parseExpr());
 				node.add(parseAssign());
 				break;
 			case IF:
 				currSymb = skip(node);
 				node.add(parseExpr());
-				addLeafSymbol(node, Term.THEN, "[\"" + currSymb.lexeme + "\", " + currSymb.token + "]: Expected [\"then\", THEN] symbol.");
+				addLeafSymbol(node, Term.THEN, "Expected 'then' symbol.");
 				node.add(parseStmt());
 				node.add(parseStmtExtention());
 				node.add(parseElse());
-				addLeafSymbol(node, Term.END, "Expected end symbol.");
+				addLeafSymbol(node, Term.END, "Expected 'end' symbol.");
 				break;
 			case WHILE:
 				currSymb = skip(node);
 				node.add(parseExpr());
-				addLeafSymbol(node, Term.DO, "Expected then symbol.");
+				addLeafSymbol(node, Term.DO, "Expected 'do' symbol.");
 				node.add(parseStmt());
 				node.add(parseStmtExtention());
-				addLeafSymbol(node, Term.END, "Expected end symbol.");
+				addLeafSymbol(node, Term.END, "Expected 'end' symbol.");
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
+				report(currSymb, "Not suitable symbol for statement.");
 		}
 		return node;
 	}
@@ -518,7 +501,7 @@ public class SynAn extends Phase {
 			case COLON: case END: case ELSE:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
+				report(currSymb, "Expected ';' symbol for more statements, ':', 'end' or 'else' symbols.");
 		}
 		return node;
 	}
@@ -537,7 +520,7 @@ public class SynAn extends Phase {
 			case END:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
+				report(currSymb, "Expected 'else' or 'end' symbol.");
 		}
 		return node;
 	}
@@ -555,35 +538,7 @@ public class SynAn extends Phase {
 			case COLON: case RBRACE: case SEMIC: case END: case ELSE:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
-		}
-		return node;
-	}
-
-
-	private DerNode parseDecl() {
-		DerNode node = new DerNode(Nont.Decl);
-		getNextSymbol();
-		dump("Parse declaration");
-		switch (currSymb.token) {
-			case TYP: case VAR:
-				currSymb = skip(node);
-				addLeafSymbol(node, Term.IDENTIFIER, "Expected identifier.");
-				addLeafSymbol(node, Term.COLON, "Expected colon.");
-				node.add(parseType());
-				break;
-			case FUN:
-				currSymb = skip(node);
-				addLeafSymbol(node, Term.IDENTIFIER, "Expected identifier.");
-				addLeafSymbol(node, Term.LPARENTHESIS, "Expected left parenthesis.");
-				node.add(parseIdentifiers());
-				addLeafSymbol(node, Term.RPARENTHESIS, "Expected right parenthesis.");
-				addLeafSymbol(node, Term.COLON, "Expected colon.");
-				node.add(parseType());
-				node.add(parseAssign());
-				break;
-			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
+				report(currSymb, "Expected '=' to declare function body.");
 		}
 		return node;
 	}
@@ -602,10 +557,38 @@ public class SynAn extends Phase {
 			case RBRACE:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
+				report(currSymb, "Not suitable symbol for where statement. Expected 'where' or '}' symbol.");
 		}
 		return node;
 
+	}
+
+
+	private DerNode parseDecl() {
+		DerNode node = new DerNode(Nont.Decl);
+		getNextSymbol();
+		dump("Parse declaration");
+		switch (currSymb.token) {
+			case TYP: case VAR:
+				currSymb = skip(node);
+				addLeafSymbol(node, Term.IDENTIFIER, "Expected typ/var identifier.");
+				addLeafSymbol(node, Term.COLON, "Expected ':' symbol.");
+				node.add(parseType());
+				break;
+			case FUN:
+				currSymb = skip(node);
+				addLeafSymbol(node, Term.IDENTIFIER, "Expected function identifier.");
+				addLeafSymbol(node, Term.LPARENTHESIS, "Expected '(' symbol.");
+				node.add(parseIdentifiers());
+				addLeafSymbol(node, Term.RPARENTHESIS, "Expected ')' symbol.");
+				addLeafSymbol(node, Term.COLON, "Expected ':' symbol.");
+				node.add(parseType());
+				node.add(parseAssign());
+				break;
+			default:
+				report(currSymb, "Not suitable symbol for declaration. Expected 'fun', 'var' or 'typ' symbol.");
+		}
+		return node;
 	}
 
 
@@ -622,7 +605,7 @@ public class SynAn extends Phase {
 			case RBRACE:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for identifiers.");
+				report(currSymb, "Expected ';' for more decelerations or '}' symbol.");
 		}
 		return node;
 	}

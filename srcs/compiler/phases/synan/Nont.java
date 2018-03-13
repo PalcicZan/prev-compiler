@@ -10,23 +10,16 @@ public enum Nont {
 
 	Source,
 
-	Expr,
-	Expr1,
+	Expr, ExprMulDiv, ExprXorOr, ExprAnd, ExprCompare, ExprAddSub, ExprUnary, ExprAccess,
+
 	Term,
 	Type,
+	Identifiers, IdentifiersExtension,
 	Access,
-	Identifiers,
-	IdentifiersExtention,
-	Args, Arg, ArgExtension,
-
-	Stmt,
-	StmtExtension,
 	Assign,
+	Args, Arg, ArgExtension,
+	Stmt, StmtExtension,
+	Decl, DeclExtension,
 
-	Decl,
-	DeclExtension,
-
-	Where,
-	Else,
-	Unary,
+	Where, Else
 }

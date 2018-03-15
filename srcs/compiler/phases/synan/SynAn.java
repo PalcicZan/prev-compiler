@@ -102,7 +102,7 @@ public class SynAn extends Phase {
 	private void addLeafSymbol(DerNode node, Term matchingTerm, String errorMsg) {
 		getNextSymbol();
 		if (currSymb.token != matchingTerm)
-			throw new Report.Error(currSymb.location(), errorMsg);
+			report(currSymb, errorMsg);
 		currSymb = skip(node);
 	}
 
@@ -186,10 +186,10 @@ public class SynAn extends Phase {
 				case IDENTIFIER:
 				case VOIDCONST: case BOOLCONST: case CHARCONST: case INTCONST: case PTRCONST:
 				case LBRACE: case LPARENTHESIS:
-					node.add(parseExprOnLevel(level+1));
+					node.add(parseExprOnLevel(level + 1));
 					break;
 				default:
-					throw new Report.Error("Not an expression [" + level + "].");
+					report(currSymb, "Not an expression [" + level + "].");
 			}
 		} else if (level == 7) {
 			switch (currSymb.token) {
@@ -248,7 +248,7 @@ public class SynAn extends Phase {
 			case WHERE: case DO: case THEN: case END: case ASSIGN: case ELSE: case EOF:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol.");
+				report(currSymb, "Not suitable symbol.");
 		}
 		return node;
 	}
@@ -318,7 +318,7 @@ public class SynAn extends Phase {
 		dump("Parse arg");
 		switch (currSymb.token) {
 			case ADD: case SUB: case BOOLCONST: case INTCONST: case CHARCONST: case PTRCONST:
-			case VOIDCONST:	case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NEQ:
+			case VOIDCONST: case LPARENTHESIS: case IDENTIFIER: case LBRACE: case NEQ:
 			case MEM: case VAL: case NEW: case DEL: case LBRACKET:
 				// function call with args
 				node.add(parseExpr());
@@ -327,7 +327,7 @@ public class SynAn extends Phase {
 			case RPARENTHESIS:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for arguments.");
+				report(currSymb, "Not suitable symbol for arguments.");
 		}
 		return node;
 
@@ -347,7 +347,7 @@ public class SynAn extends Phase {
 			case RPARENTHESIS:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for arguments.");
+				report(currSymb, "Not suitable symbol for arguments.");
 		}
 		return node;
 
@@ -363,17 +363,19 @@ public class SynAn extends Phase {
 				currSymb = skip(node);
 				node.add(parseExpr());
 				addLeafSymbol(node, Term.RBRACKET, "Expected right bracket to enclose element access.");
+				node.add(parseAccess());
 				break;
 			case DOT:
 				currSymb = skip(node);
 				addLeafSymbol(node, Term.IDENTIFIER, "Expected identifier to access component.");
+				node.add(parseAccess());
 				break;
 			case IOR: case XOR: case AND: case EQU: case NEQ: case LEQ: case GEQ: case LTH: case GTH: case ADD:
 			case SUB: case MUL: case DIV: case MOD: case RBRACKET: case RPARENTHESIS: case COMMA: case COLON:
 			case RBRACE: case SEMIC: case WHERE: case ASSIGN: case THEN: case ELSE: case END: case DO: case EOF:
 				break;
 			default:
-				throw new Report.Error("Not suitable symbol for component/element access.");
+				report(currSymb, "Not suitable symbol for component/element access.");
 		}
 		return node;
 	}

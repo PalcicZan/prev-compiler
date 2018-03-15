@@ -39,7 +39,11 @@ expr6 -> del expr6 .
 expr6 -> [ type ] expr6 .
 
 expr7 -> term access  .
-access -> dot identifier | [ expr ] | .
+access -> .
+access -> dot identifier access .
+access -> [ expr ] access.
+
+#access -> dot identifier | [ expr ] | .
 
 # literal
 term -> literal .

@@ -6,5 +6,5 @@ prev-compiler.iml
 out/
 
 # Data
-data/tests/
+data/tests/*
 data/*/*/*.xml

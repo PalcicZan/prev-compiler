@@ -41,7 +41,7 @@ expr6 -> [ type ] expr6 .
 expr7 -> term access  .
 access -> .
 access -> dot identifier access .
-access -> [ expr ] access.
+access -> [ expr ] access .
 
 #access -> dot identifier | [ expr ] | .
 

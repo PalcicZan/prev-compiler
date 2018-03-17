@@ -1,6 +1,6 @@
 # Change Log
 
-## [v0.2.0](https://github.com/PalcicZan/prev-compiler/tree/v0.2.0) (17.03/2018)
+## [v0.2.0](https://github.com/PalcicZan/prev-compiler/tree/v0.2.0) (17.03.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.1.0...v0.2.0)
 
 **Implemented enhancements:**

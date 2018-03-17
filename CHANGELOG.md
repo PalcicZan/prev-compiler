@@ -1,6 +1,13 @@
 # Change Log
 
-## [v0.1.0] (08.03.2017)
+## [v0.2.0](https://github.com/PalcicZan/prev-compiler/tree/v0.2.0) (17.03/2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.1.0...v0.2.0)
+
+**Implemented enhancements:**
+
+- Syntax analyzer [\#1](https://github.com/PalcicZan/prev-compiler/issues/1)
+
+## [v0.1.0](https://github.com/PalcicZan/prev-compiler/tree/v0.1.0) (08.03.2017)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/4056d5da106c367908310df1bf54b4d0dce819e8...master)
 
 **Implemented enhancements:**

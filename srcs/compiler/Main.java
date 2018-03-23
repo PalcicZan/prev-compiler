@@ -121,6 +121,7 @@ public class Main {
 				try (Abstr abstr = new Abstr()) {
 					abstr.fromDerTree(SynAn.derTree());
 				}
+
 				if (cmdLine.get("--target-phase").equals("abstr"))
 					break;
 

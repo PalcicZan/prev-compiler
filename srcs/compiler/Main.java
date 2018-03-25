@@ -1,32 +1,32 @@
 package compiler;
 
 import java.util.*;
+
 import common.report.*;
 import compiler.phases.lexan.*;
 import compiler.phases.synan.*;
 import compiler.phases.abstr.*;
+import compiler.phases.seman.*;
 
 /**
  * The compiler.
- * 
- * @author sliva
  *
+ * @author sliva
  */
 public class Main {
 
 	/** All valid phases of the compiler. */
-	private static final String phases = "lexan|synan|abstr";
+	private static final String phases = "lexan|synan|abstr|seman";
 
 	/** Values of command line arguments. */
 	private static HashMap<String, String> cmdLine = new HashMap<String, String>();
 
 	/**
 	 * Returns the value of a command line argument.
-	 * 
-	 * @param cmdLineArgName
-	 *            The name of the command line argument.
+	 *
+	 * @param cmdLineArgName The name of the command line argument.
 	 * @return The value of the specified command line argument or {@code null}
-	 *         if the specified command line argument has not been used.
+	 * if the specified command line argument has not been used.
 	 */
 	public static String cmdLineArgValue(String cmdLineArgName) {
 		return cmdLine.get(cmdLineArgName);
@@ -34,9 +34,8 @@ public class Main {
 
 	/**
 	 * The compiler's {@code main} method.
-	 * 
-	 * @param argv
-	 *            Command line arguments.
+	 *
+	 * @param argv Command line arguments.
 	 */
 	public static void main(String[] argv) {
 		try {
@@ -99,14 +98,14 @@ public class Main {
 				if (cmdLine.get("--target-phase").equals("lexan")) {
 					try (LexAn lexan = new LexAn()) {
 						while (lexan.lexer().token != Term.EOF) {}
-					} catch (Report.Error e){
+					} catch (Report.Error e) {
 						throw new Report.Error("Compilation stopped.");
 					}
 					break;
 				}
 
 				Report.info("Lexical analysis complete.");
-				
+
 				// Syntax analysis.
 				try (SynAn synAn = new SynAn()) {
 					synAn.parser();
@@ -123,6 +122,14 @@ public class Main {
 				}
 
 				if (cmdLine.get("--target-phase").equals("abstr"))
+					break;
+
+				// Semantic analysis.
+				try (SemAn semAn = new SemAn()) {
+					Abstr.absTree().accept(new NameChecker(new SymbTable()), null);
+				}
+
+				if (cmdLine.get("--target-phase").equals("seman"))
 					break;
 
 				int endWarnings = Report.numOfWarnings();

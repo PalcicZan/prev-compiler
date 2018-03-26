@@ -12,7 +12,7 @@ import compiler.phases.abstr.abstree.*;
  * {@link NameDefiner}, whenever a declaration is encountered during the AST
  * traversal.
  *
- * @author sliva
+ * @author sliva && zan
  */
 public class NameChecker implements AbsVisitor<Object, Object> {
 
@@ -20,6 +20,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	private final SymbTable symbTable;
 
 	private final NameDefiner nameDefiner;
+	private final ConstIntEvaluator constIntEvaluator;
 
 	/**
 	 * Constructs a new name checker using the specified symbol table.
@@ -29,6 +30,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	public NameChecker(SymbTable symbTable) {
 		this.symbTable = symbTable;
 		nameDefiner = new NameDefiner(this.symbTable);
+		constIntEvaluator = new ConstIntEvaluator();
 	}
 
 	private static final HashMap<Class, String> declMsg;
@@ -187,7 +189,14 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	@Override
 	public Object visit(AbsArrExpr arrExpr, Object visArg) {
 		arrExpr.array.accept(this, null);
-		arrExpr.index.accept(this, null);
+		Long idx = arrExpr.index.accept(constIntEvaluator, null);
+		if(idx != null) {
+			if(idx >= 0) {
+				
+			} else {
+				Report.warning(arrExpr.location, "Using negative indices.");
+			}
+		}
 		return null;
 	}
 

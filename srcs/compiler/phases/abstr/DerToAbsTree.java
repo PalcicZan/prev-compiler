@@ -207,7 +207,7 @@ public class DerToAbsTree implements DerVisitor<AbsTree, AbsTree> {
 						case IDENTIFIER:
 							at = node.subtree(1).accept(this, null);
 							String idName = getIdName(node, 0);
-							if (at == null) {
+							if (node.subtree(1).location() == null) {
 								at = new AbsVarName(node.location(), idName);
 							} else {
 								at = new AbsFunName(node.location(), idName, (AbsArgs) at);
@@ -320,7 +320,7 @@ public class DerToAbsTree implements DerVisitor<AbsTree, AbsTree> {
 			case Args:
 				skip(node, 0);
 				skip(node, 2);
-				at = node.subtree(1).accept(this, visArg);
+				at = node.subtree(1).accept(this, new AbsArgs(node.location(), new Vector<>()));
 				break;
 			case Arg:
 				at = getArgs(node, 0, visArg);

@@ -1,23 +1,22 @@
 package compiler.phases.seman;
 
 import java.util.*;
+
 import common.report.*;
 import compiler.phases.abstr.abstree.*;
 
 /**
  * Symbol table.
- * 
- * @author sliva
  *
+ * @author sliva
  */
 public class SymbTable {
 
 	/**
 	 * A symbol table record denoting a declaration of a name within a certain
 	 * scope.
-	 * 
-	 * @author sliva
 	 *
+	 * @author sliva
 	 */
 	private class ScopedDecl {
 
@@ -30,11 +29,9 @@ public class SymbTable {
 		/**
 		 * Constructs a new record denoting a declaration of a name within a
 		 * certain scope.
-		 * 
-		 * @param depth
-		 *            The depth of the scope the declaration belongs to.
-		 * @param decl
-		 *            The declaration.
+		 *
+		 * @param depth The depth of the scope the declaration belongs to.
+		 * @param decl  The declaration.
 		 */
 		public ScopedDecl(int depth, AbsDecl decl) {
 			this.depth = depth;
@@ -77,7 +74,7 @@ public class SymbTable {
 
 	/**
 	 * Returns the depth of the currently active scope.
-	 * 
+	 *
 	 * @return The depth of the currently active scope.
 	 */
 	public int currDepth() {
@@ -89,14 +86,11 @@ public class SymbTable {
 	 * throws an exception if this name has already been declared within this
 	 * scope. Once the symbol table is locked, any attempt to insert further
 	 * declarations results in an internal error.
-	 * 
-	 * @param name
-	 *            The name.
-	 * @param decl
-	 *            The declaration.
-	 * @throws CannotInsNameException
-	 *             Thrown if this name has already been declared within the
-	 *             currently active scope.
+	 *
+	 * @param name The name.
+	 * @param decl The declaration.
+	 * @throws CannotInsNameException Thrown if this name has already been declared within the
+	 *                                currently active scope.
 	 */
 	public void ins(String name, AbsDecl decl) throws CannotInsNameException {
 		if (lock)
@@ -111,7 +105,7 @@ public class SymbTable {
 		if (!allDeclsOfName.isEmpty()) {
 			ScopedDecl declOfName = allDeclsOfName.getFirst();
 			if (declOfName.depth == currDepth)
-				throw new CannotInsNameException();
+				throw new CannotInsNameException(declOfName.decl);
 		}
 
 		allDeclsOfName.addFirst(new ScopedDecl(currDepth, decl));
@@ -123,13 +117,12 @@ public class SymbTable {
 	 * declaration can belong either to the currently active scope or any scope
 	 * enclosing it. If no declaration of the name exists within these scopes,
 	 * an exception is thrown.
-	 * 
-	 * @param name
-	 *            The name.
+	 *
+	 * @param name The name.
 	 * @return The declaration.
-	 * @throws CannotFndNameException
-	 *             Thrown if the name is not declared within the currently
-	 *             active scope or any scope enclosing it.
+	 *
+	 * @throws CannotFndNameException Thrown if the name is not declared within the currently
+	 *                                active scope or any scope enclosing it.
 	 */
 	public AbsDecl fnd(String name) throws CannotFndNameException {
 		LinkedList<ScopedDecl> allDeclsOfName = allDeclsOfAllNames.get(name);
@@ -182,12 +175,13 @@ public class SymbTable {
 
 	/**
 	 * An exception thrown when the name cannot be inserted into a symbol table.
-	 * 
-	 * @author sliva
 	 *
+	 * @author sliva
 	 */
 	@SuppressWarnings("serial")
 	public class CannotInsNameException extends Exception {
+
+		String msg = "";
 
 		/**
 		 * Constructs a new exception.
@@ -195,13 +189,16 @@ public class SymbTable {
 		private CannotInsNameException() {
 		}
 
+		private CannotInsNameException(AbsDecl decl) {
+			msg = "[" + decl.location + "]";
+		}
+
 	}
 
 	/**
 	 * An exception thrown when the name cannot be found in the symbol table.
-	 * 
-	 * @author sliva
 	 *
+	 * @author sliva
 	 */
 	@SuppressWarnings("serial")
 	public class CannotFndNameException extends Exception {

@@ -129,6 +129,8 @@ public class Main {
 					Abstr.absTree().accept(new NameChecker(new SymbTable()), null);
 				}
 
+				Report.info("Semantic analysis complete.");
+
 				if (cmdLine.get("--target-phase").equals("seman"))
 					break;
 

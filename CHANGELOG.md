@@ -1,5 +1,14 @@
 # Change Log
 
+## [v0.4.0](https://github.com/PalcicZan/prev-compiler/tree/v0.4.0) (29.03.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.3.0...v0.4.0)
+
+**Implemented enhancements:**
+
+- Semantic analysis \(name checking\) [\#3](https://github.com/PalcicZan/prev-compiler/issues/3)
+
+# Change Log
+
 ## [v0.3.0](https://github.com/PalcicZan/prev-compiler/tree/v0.3.0) (23.03.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.2.0...v0.3.0)
 

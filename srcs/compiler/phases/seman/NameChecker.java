@@ -20,6 +20,9 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	private final SymbTable symbTable;
 
 	private final NameDefiner nameDefiner;
+
+	/** Testing purpuses of constIntEvaluator */
+	private static final boolean useConstIntEvaluator = false;
 	private final ConstIntEvaluator constIntEvaluator;
 
 	/**
@@ -56,7 +59,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	}
 
 	private void mismatch(AbsDecl decl, Location calleLoc, String shouldBeDeclMsg) {
-		throw new Report.Error(calleLoc, "Use mismatch on '" + decl.name + "'! On ["+ decl.location +"] declared as a " +
+		throw new Report.Error(calleLoc, "Use mismatch on '" + decl.name + "'! On [" + decl.location + "] declared as a " +
 			declMsg.get(decl.getClass()) + " but used as a " + shouldBeDeclMsg + ".");
 	}
 
@@ -189,12 +192,14 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	@Override
 	public Object visit(AbsArrExpr arrExpr, Object visArg) {
 		arrExpr.array.accept(this, null);
-		Long idx = arrExpr.index.accept(constIntEvaluator, null);
-		if(idx != null) {
-			if(idx >= 0) {
-				
-			} else {
-				Report.warning(arrExpr.location, "Using negative indices.");
+		if (useConstIntEvaluator) {
+			Long idx = arrExpr.index.accept(constIntEvaluator, null);
+			if (idx != null) {
+				if (idx >= 0) {
+					System.out.println(idx);
+				} else {
+					Report.warning(arrExpr.location, "Using negative indices '" + idx + "'.");
+				}
 			}
 		}
 		return null;

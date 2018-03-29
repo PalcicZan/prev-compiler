@@ -411,6 +411,7 @@ public class DerToAbsTree implements DerVisitor<AbsTree, AbsTree> {
 		TermToOperator.put(Term.AND, AbsBinExpr.Oper.AND);
 		TermToOperator.put(Term.IOR, AbsBinExpr.Oper.IOR);
 		TermToOperator.put(Term.XOR, AbsBinExpr.Oper.XOR);
+		TermToOperator.put(Term.DIV, AbsBinExpr.Oper.DIV);
 		TermToOperator.put(Term.MOD, AbsBinExpr.Oper.MOD);
 		TermToOperator.put(Term.MUL, AbsBinExpr.Oper.MUL);
 		TermToOperator.put(Term.EQU, AbsBinExpr.Oper.EQU);

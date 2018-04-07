@@ -1,14 +1,14 @@
 package compiler.phases.abstr;
 
 import java.util.*;
+
 import common.logger.*;
 import compiler.phases.abstr.abstree.*;
 
 /**
  * The visitor that produces the log of the abstract syntax tree.
- * 
- * @author sliva
  *
+ * @author sliva
  */
 public class AbsLogger implements AbsVisitor<Object, Object> {
 
@@ -20,9 +20,8 @@ public class AbsLogger implements AbsVisitor<Object, Object> {
 
 	/**
 	 * Construct a new visitor with a logger the log should be written to.
-	 * 
-	 * @param logger
-	 *            The logger the log should be written to.
+	 *
+	 * @param logger The logger the log should be written to.
 	 */
 	public AbsLogger(Logger logger) {
 		this.logger = logger;
@@ -31,12 +30,11 @@ public class AbsLogger implements AbsVisitor<Object, Object> {
 
 	/**
 	 * Adds a new subvisitor to this visitor.
-	 * 
-	 * @param subvisitor
-	 *            The subvisitor.
+	 *
+	 * @param subvisitor The subvisitor.
 	 * @return This visitor.
 	 */
-	public AbsVisitor<Object, Object> addSubvisitor(AbsVisitor<Object, Object> subvisitor) {
+	public AbsLogger addSubvisitor(AbsVisitor<Object, Object> subvisitor) {
 		subvisitors.addLast(subvisitor);
 		return this;
 	}

@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.5.0](https://github.com/PalcicZan/prev-compiler/tree/v0.5.0) (07.04.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.4.0...v0.5.0)
+
+**Implemented enhancements:**
+
+- Semantic analysis \(type checking\) [\#4](https://github.com/PalcicZan/prev-compiler/issues/4)
+
 ## [v0.4.0](https://github.com/PalcicZan/prev-compiler/tree/v0.4.0) (29.03.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.3.0...v0.4.0)
 

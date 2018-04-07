@@ -1,7 +1,5 @@
 package compiler.phases.seman;
 
-import java.util.*;
-
 import common.report.*;
 import compiler.phases.abstr.*;
 import compiler.phases.abstr.abstree.*;
@@ -18,12 +16,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 
 	/** The symbol table. */
 	private final SymbTable symbTable;
-
 	private final NameDefiner nameDefiner;
-
-	/** Testing purpuses of constIntEvaluator */
-	private static final boolean useConstIntEvaluator = false;
-	private final ConstIntEvaluator constIntEvaluator;
 
 	/**
 	 * Constructs a new name checker using the specified symbol table.
@@ -33,20 +26,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	public NameChecker(SymbTable symbTable) {
 		this.symbTable = symbTable;
 		nameDefiner = new NameDefiner(this.symbTable);
-		constIntEvaluator = new ConstIntEvaluator();
 	}
-
-	private static final HashMap<Class, String> declMsg;
-
-	static {
-		declMsg = new HashMap<>();
-		declMsg.put(AbsVarDecl.class, "variable");
-		declMsg.put(AbsFunDecl.class, "function");
-		declMsg.put(AbsTypeDecl.class, "type");
-		declMsg.put(AbsParDecl.class, "parameter");
-		declMsg.put(AbsCompDecl.class, "component");
-	}
-
 
 	private void useMatch(AbsName typeName, AbsDecl decl, Class shouldBeDecl) {
 		if (decl.getClass().isAssignableFrom(shouldBeDecl)) {
@@ -58,10 +38,6 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 		}
 	}
 
-	private void mismatch(AbsDecl decl, Location calleLoc, String shouldBeDeclMsg) {
-		throw new Report.Error(calleLoc, "Use mismatch on '" + decl.name + "'! On [" + decl.location + "] declared as a " +
-			declMsg.get(decl.getClass()) + " but used as a " + shouldBeDeclMsg + ".");
-	}
 
 	@Override
 	public Object visit(AbsStmtExpr stmtExpr, Object visArg) {
@@ -90,7 +66,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 			if (funDecl instanceof AbsFunDecl) {
 				SemAn.declAt().put(funName, funDecl);
 			} else {
-				mismatch(funDecl, funName.location, "function");
+				SemAn.mismatch(funDecl, funName.location, "function");
 			}
 			// check args if any
 			funName.args.accept(this, null);
@@ -107,9 +83,9 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 			if (varDecl instanceof AbsVarDecl) {
 				SemAn.declAt().put(varName, varDecl);
 			} else {
-				mismatch(varDecl, varName.location, "variable");
+				SemAn.mismatch(varDecl, varName.location, "variable");
 			}
-			SemAn.declAt().put(varName, varDecl);
+			//SemAn.declAt().put(varName, varDecl);
 		} catch (SymbTable.CannotFndNameException e) {
 			throw new Report.Error(varName.location, "Cannot find name '" + varName.name + "'");
 		}
@@ -123,7 +99,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 			if (typeDecl instanceof AbsTypeDecl) {
 				SemAn.declAt().put(typeName, typeDecl);
 			} else {
-				mismatch(typeDecl, typeName.location, "type");
+				SemAn.mismatch(typeDecl, typeName.location, "type");
 			}
 		} catch (SymbTable.CannotFndNameException e) {
 			throw new Report.Error(typeName.location, "Cannot find name '" + typeName.name + "'");
@@ -192,16 +168,7 @@ public class NameChecker implements AbsVisitor<Object, Object> {
 	@Override
 	public Object visit(AbsArrExpr arrExpr, Object visArg) {
 		arrExpr.array.accept(this, null);
-		if (useConstIntEvaluator) {
-			Long idx = arrExpr.index.accept(constIntEvaluator, null);
-			if (idx != null) {
-				if (idx >= 0) {
-					System.out.println(idx);
-				} else {
-					Report.warning(arrExpr.location, "Using negative indices '" + idx + "'.");
-				}
-			}
-		}
+		arrExpr.index.accept(this, null);
 		return null;
 	}
 

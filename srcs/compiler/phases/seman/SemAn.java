@@ -1,9 +1,13 @@
 package compiler.phases.seman;
 
+import common.report.Location;
+import common.report.Report;
 import compiler.phases.*;
 import compiler.phases.abstr.*;
 import compiler.phases.abstr.abstree.*;
 import compiler.phases.seman.type.*;
+
+import java.util.HashMap;
 
 /**
  * Semantic analysis.
@@ -12,29 +16,70 @@ import compiler.phases.seman.type.*;
  */
 public class SemAn extends Phase {
 
+	private static final boolean completePhase = false;
+
+	/** Hash map for error messages */
+	static final HashMap<Class, String> declMsg;
+
+	static {
+		declMsg = new HashMap<>();
+		declMsg.put(AbsVarDecl.class, "variable");
+		declMsg.put(AbsFunDecl.class, "function");
+		declMsg.put(AbsTypeDecl.class, "type");
+		declMsg.put(AbsParDecl.class, "parameter");
+		declMsg.put(AbsCompDecl.class, "component");
+	}
+
+	public static String mismatchMsg(AbsDecl decl, String shouldBeDeclMsg) {
+		return "Use mismatch on '" + decl.name + "'! On [" + decl.location + "] declared as a " +
+			SemAn.declMsg.get(decl.getClass()) + " but used as a " + shouldBeDeclMsg + ".";
+	}
+
+	public static void mismatch(AbsDecl decl, Location calleLoc, String shouldBeDeclMsg) {
+		throw new Report.Error(calleLoc, mismatchMsg(decl, shouldBeDeclMsg));
+	}
+
+	public static SemType check(boolean cond, String msg, AbsTree node, boolean forceError) {
+		if (cond) return null;
+		if (forceError) {
+			throw new Report.Error(node.location, msg);
+		} else {
+			return check(cond, msg, node);
+		}
+	}
+
+	public static SemType check(boolean cond, String msg, AbsTree node) {
+		if (cond) return null;
+		if (completePhase) {
+			Report.warning(node.location, msg);
+			return new SemErrorType();
+		} else {
+			throw new Report.Error(node.location, msg);
+		}
+	}
+
 	/** The attribute that maps the usage of a name to its declaration. */
 	private static final AbsAttribute<AbsName, AbsDecl> declAt = new AbsAttribute<AbsName, AbsDecl>();
 
 	/**
 	 * The attribute that maps maps a type declaration to an internal
-	 * representation of a declared type.
+	 * representation of a declared type. (Declarations)
 	 */
 	private static final AbsAttribute<AbsTypeDecl, SemNamedType> declType = new AbsAttribute<AbsTypeDecl, SemNamedType>();
-
 	/**
 	 * The attribute that maps a type expression to an internal representation
-	 * of a described type.
+	 * of a described type. (isType)
 	 */
 	private static final AbsAttribute<AbsType, SemType> descType = new AbsAttribute<AbsType, SemType>();
 
 	/**
 	 * The attribute that maps an expression to an internal representation of
-	 * its type.
+	 * its type. (ofType)
 	 */
 	private static final AbsAttribute<AbsExpr, SemType> isOfType = new AbsAttribute<AbsExpr, SemType>();
 
 	/** The attribute that maps a record to its symbol table. */
-	private static final AbsAttribute<AbsRecType, SymbTable> recSymbTable = new AbsAttribute<AbsRecType, SymbTable>();
+	private static final AbsAttribute<SemRecType, SymbTable> recSymbTable = new AbsAttribute<SemRecType, SymbTable>();
 
 	/**
 	 * The attribute that tells whether an expression can evaluate to an lvalue.
@@ -88,7 +133,7 @@ public class SemAn extends Phase {
 	 *
 	 * @return The attribute that maps a record to its symbol table.
 	 */
-	public static AbsAttribute<AbsRecType, SymbTable> recSymbTable() {
+	public static AbsAttribute<SemRecType, SymbTable> recSymbTable() {
 		return recSymbTable;
 	}
 

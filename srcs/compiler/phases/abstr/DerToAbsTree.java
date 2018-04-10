@@ -372,9 +372,9 @@ public class DerToAbsTree implements DerVisitor<AbsTree, AbsTree> {
 	private AbsDecls getDecls(DerNode node, int index, AbsTree visArg) {
 		Vector<AbsDecl> declsVec = new Vector<>();
 		declsVec.add((AbsDecl) node.subtree(index).accept(this, visArg));
-		AbsDecls declsExt = (AbsDecls) node.subtree(index + 1).accept(this, visArg);
+		AbsTree declsExt = node.subtree(index + 1).accept(this, null);
 		if (declsExt != null) {
-			declsVec.addAll(declsExt.decls());
+			declsVec.addAll(((AbsDecls) declsExt).decls());
 		}
 		return new AbsDecls(getVecLocation(declsVec), declsVec);
 	}
@@ -384,9 +384,9 @@ public class DerToAbsTree implements DerVisitor<AbsTree, AbsTree> {
 		String name = getIdName(node, startIndex);
 		AbsType type = (AbsType) node.subtree(startIndex + 2).accept(this, null);
 		decls.add(new AbsCompDecl(new Location(node.subtree(startIndex).location(), type.location()), name, type));
-		AbsCompDecls declsExtention = (AbsCompDecls) node.subtree(startIndex + 3).accept(this, null);
+		AbsTree declsExtention = node.subtree(startIndex + 3).accept(this, null);
 		if (declsExtention != null) {
-			decls.addAll(declsExtention.compDecls());
+			decls.addAll(((AbsCompDecls) declsExtention).compDecls());
 		}
 		return new AbsCompDecls(getVecLocation(decls), decls);
 	}
@@ -394,10 +394,10 @@ public class DerToAbsTree implements DerVisitor<AbsTree, AbsTree> {
 	private AbsStmts getStmts(DerNode node, int startIndex) {
 		Vector<AbsStmt> thenStmts = new Vector<>();
 		AbsStmt firstStmt = (AbsStmt) node.subtree(startIndex).accept(this, null);
-		AbsStmts stmtsExt = (AbsStmts) node.subtree(startIndex + 1).accept(this, null);
+		AbsTree stmtsExt = node.subtree(startIndex + 1).accept(this, null);
 		thenStmts.add(firstStmt);
 		if (stmtsExt != null) {
-			thenStmts.addAll(stmtsExt.stmts());
+			thenStmts.addAll(((AbsStmts) stmtsExt).stmts());
 		}
 		return new AbsStmts(getVecLocation(thenStmts), thenStmts);
 	}

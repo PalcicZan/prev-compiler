@@ -31,7 +31,7 @@ public class Frame implements Loggable {
 	 *
 	 * @param label     The function's entry label.
 	 * @param depth    The function's static depth (>0).
-	 * @param locsSize The size of the block of local variables within a frame.
+	 * @param locsSize The size of the block of local variables within a frame.¸
 	 * @param argsSize The size of the block of arguments within a frame.
 	 */
 	public Frame(Label label, int depth, long locsSize, long argsSize) {
@@ -40,6 +40,7 @@ public class Frame implements Loggable {
 		this.locsSize = locsSize;
 		this.argsSize = argsSize;
 		this.size = this.locsSize + this.argsSize + 2 * (new SemPtrType(new SemVoidType())).size();
+		// old FP + return addr
 	}
 
 	@Override

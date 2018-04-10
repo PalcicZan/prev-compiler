@@ -229,6 +229,7 @@ public class TypeChecker implements AbsVisitor<SemType, Object> {
 			// declare and confirm
 			SemAn.declAt().put(recExpr.comp, recDecl);
 			type = SemAn.descType().get(recDecl.type);
+			recExpr.comp.accept(this, null);
 		} catch (SymbTable.CannotFndNameException e) {
 			SemAn.check(false, "Record has no component called '" + recExpr.comp.name + "'.", recExpr.comp);
 			type = new SemErrorType();
@@ -387,6 +388,7 @@ public class TypeChecker implements AbsVisitor<SemType, Object> {
 
 	@Override
 	public SemType visit(AbsCompDecl compDecl, Object visArg) {
+		compDecl.type.accept(this, null);
 		return null;
 	}
 

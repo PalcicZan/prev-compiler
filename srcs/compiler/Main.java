@@ -8,6 +8,7 @@ import compiler.phases.synan.*;
 import compiler.phases.abstr.*;
 import compiler.phases.frames.*;
 import compiler.phases.seman.*;
+import compiler.phases.imcgen.*;
 
 /**
  * The compiler.
@@ -17,7 +18,7 @@ import compiler.phases.seman.*;
 public class Main {
 
 	/** All valid phases of the compiler. */
-	private static final String phases = "lexan|synan|abstr|seman|frames";
+	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen";
 
 	/** Values of command line arguments. */
 	private static HashMap<String, String> cmdLine = new HashMap<String, String>();
@@ -149,6 +150,16 @@ public class Main {
 				Report.info("Frames and access evaluation complete.");
 
 				if (cmdLine.get("--target-phase").equals("frames"))
+					break;
+
+				// Intermediate code generation.
+				try (ImcGen imCode = new ImcGen()) {
+					Abstr.absTree().accept(new ImcExprGenerator(), null);
+				}
+
+				Report.info("Intermediate code generation complete.");
+
+				if (cmdLine.get("--target-phase").equals("imcgen"))
 					break;
 
 				int endWarnings = Report.numOfWarnings();

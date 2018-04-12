@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.6.0](https://github.com/PalcicZan/prev-compiler/tree/v0.6.0) (12.04.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.5.0...v0.6.0)
+
+**Implemented enhancements:**
+
+- Frames and accesses [\#5](https://github.com/PalcicZan/prev-compiler/issues/5)
+
 ## [v0.5.0](https://github.com/PalcicZan/prev-compiler/tree/v0.5.0) (07.04.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.4.0...v0.5.0)
 

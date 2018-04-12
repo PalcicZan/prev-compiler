@@ -11,7 +11,7 @@ public class FrameEvaluator extends AbsFullVisitor<Long, Long> {
 
 	// default size of ptr
 	private static final long ptrSize = (new SemPtrType(new SemVoidType())).size();
-	private static final boolean relStaticDepth = true;
+	private static final boolean relStaticDepth = false;
 
 	// stack frames
 	private static Stack<FrameAttr> stackFrames;
@@ -52,7 +52,7 @@ public class FrameEvaluator extends AbsFullVisitor<Long, Long> {
 		isGlobal = false;
 		isWrapped = true;
 
-		// function is on depth - 1 vs. parameters and local variables
+		// function is on (depth - 1) and parameters/local variables on (depth)
 		if(relStaticDepth) currDepth++;
 
 		if (stackFrames.empty()) {

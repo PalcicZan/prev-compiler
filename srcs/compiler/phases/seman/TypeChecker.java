@@ -77,7 +77,7 @@ public class TypeChecker implements AbsVisitor<SemType, Object> {
 		SemType idType = arrExpr.index.accept(this, null);
 		SemAn.check(arrType.isAKindOf(SemArrType.class), "Array expression must have array type.", arrExpr, true);
 		SemAn.check(idType.isAKindOf(SemIntType.class), "Index of array must be of int type.", arrExpr);
-		SemType type = ((SemArrType) arrType).elemType;
+		SemType type = ((SemArrType) arrType.actualType()).elemType;
 		if (onlyActualTypes) type = type.actualType();
 		return SemAn.isOfType().put(arrExpr, type);
 	}

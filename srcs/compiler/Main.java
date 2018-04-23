@@ -9,16 +9,17 @@ import compiler.phases.abstr.*;
 import compiler.phases.frames.*;
 import compiler.phases.seman.*;
 import compiler.phases.imcgen.*;
+import compiler.phases.lincode.*;
 
 /**
  * The compiler.
  *
- * @author sliva
+ * @author sliva & zan
  */
 public class Main {
 
 	/** All valid phases of the compiler. */
-	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen";
+	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode";
 
 	/** Values of command line arguments. */
 	private static HashMap<String, String> cmdLine = new HashMap<String, String>();
@@ -159,6 +160,17 @@ public class Main {
 
 				Report.info("Intermediate code generation complete.");
 
+				if (cmdLine.get("--target-phase").equals("imcgen"))
+					break;
+
+				// Linear intermediate code.
+				try (LinCode linCode = new LinCode()) {
+					Abstr.absTree().accept(new Fragmenter(), null);
+				}
+
+				Report.info("Linear intermediate code generation complete.");
+
+				new Interpreter().execute();
 				if (cmdLine.get("--target-phase").equals("imcgen"))
 					break;
 

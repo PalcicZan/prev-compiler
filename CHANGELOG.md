@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.8.0](https://github.com/PalcicZan/prev-compiler/tree/v0.8.0) (06.05.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.7.0...v0.8.0)
+
+**Implemented enhancements:**
+
+- Linearizing intermediate code [\#7](https://github.com/PalcicZan/prev-compiler/issues/7)
+
 ## [v0.7.0](https://github.com/PalcicZan/prev-compiler/tree/v0.7.0) (21.04.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.6.0...v0.7.0)
 

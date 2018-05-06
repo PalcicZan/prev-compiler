@@ -17,6 +17,8 @@ public class Frames extends Phase {
 
 	public static final AbsAttribute<AbsVarDecl, Access> accesses = new AbsAttribute<AbsVarDecl, Access>();
 
+	public static Frame mainFrame;
+
 	/**
 	 * Constructs a new phase for computing frames and accesses.
 	 */

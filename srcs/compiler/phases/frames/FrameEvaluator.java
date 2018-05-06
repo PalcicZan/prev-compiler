@@ -105,8 +105,9 @@ public class FrameEvaluator extends AbsFullVisitor<Long, Long> {
 
 		// remove "global wrapper" stack from global
 		if (wasGlobal) {
-			stackFrames.pop();
+			FrameAttr mainFrame = stackFrames.pop();
 			isGlobal = true;
+			Frames.mainFrame = new Frame(new Label(""), currDepth, mainFrame.locsSize, mainFrame.argsSize);
 		}
 
 		return null;

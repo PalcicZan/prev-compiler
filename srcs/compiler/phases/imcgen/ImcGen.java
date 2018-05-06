@@ -16,7 +16,7 @@ public class ImcGen extends Phase {
 
 	public static final boolean useAllocFun = true;
 	public static final boolean useSLinGlFunCall = true;
-	public static final boolean useFunLabel = true;
+	public static final boolean useFunLabel = false;
 	public static final boolean useCallDecl = true;
 
 

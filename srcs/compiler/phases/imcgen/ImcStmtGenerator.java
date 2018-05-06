@@ -26,9 +26,7 @@ public class ImcStmtGenerator implements AbsVisitor<ImcStmt, Stack<Frame>> {
 	public ImcStmt visit(AbsExprStmt exprStmt, Stack<Frame> visArg) {
 		ImcExpr imcExpr = exprStmt.expr.accept(imcExprGenerator, null);
 		// imcExpr = ImcGen.accessValue(imcExpr);
-		ImcStmt imcStmt = new ImcESTMT(imcExpr);
-		ImcGen.stmtImCode.put(exprStmt, imcStmt);
-		return imcStmt;
+		return ImcGen.stmtImCode.put(exprStmt, new ImcESTMT(imcExpr));
 	}
 
 	@Override
@@ -47,12 +45,14 @@ public class ImcStmtGenerator implements AbsVisitor<ImcStmt, Stack<Frame>> {
 		imcStmts.add(new ImcCJUMP(imcCond, posLabel, negLabel));
 		imcStmts.add(imcPosLabel);
 		// true part
-		imcStmts.add(ifStmt.elseBody.accept(this, null));
-		imcStmts.add(new ImcJUMP(endLabel));
+		imcStmts.add(ifStmt.thenBody.accept(this, null));
+		if (ifStmt.elseBody != null) imcStmts.add(new ImcJUMP(endLabel));
 		// false part
 		imcStmts.add(imcNegLabel);
-		imcStmts.add(ifStmt.thenBody.accept(this, null));
-		imcStmts.add(imcEndLabel);
+		if (ifStmt.elseBody != null) {
+			imcStmts.add(ifStmt.elseBody.accept(this, null));
+			imcStmts.add(imcEndLabel);
+		}
 
 		return ImcGen.stmtImCode.put(ifStmt, new ImcSTMTS(imcStmts));
 	}

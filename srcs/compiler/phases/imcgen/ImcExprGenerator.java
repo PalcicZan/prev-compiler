@@ -46,11 +46,12 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 		ImcExpr imcArr = arrExpr.array.accept(this, null);
 		ImcExpr imcIndex = arrExpr.index.accept(this, null);
 		ImcExpr imcElemSize = new ImcCONST(SemAn.isOfType().get(arrExpr).size());
-		if (imcArr instanceof ImcMEM)
+		if (imcArr instanceof ImcMEM) {
 			imcArr = ((ImcMEM) imcArr).addr;
-
+			ImcGen.exprImCode.put(arrExpr.array, imcArr);
+		}
 		return ImcGen.exprImCode.put(arrExpr,
-			new ImcBINOP(ImcBINOP.Oper.ADD, imcArr, new ImcBINOP(ImcBINOP.Oper.MUL, imcIndex, imcElemSize)));
+			new ImcMEM(new ImcBINOP(ImcBINOP.Oper.ADD, imcArr, new ImcBINOP(ImcBINOP.Oper.MUL, imcIndex, imcElemSize))));
 	}
 
 	@Override
@@ -130,6 +131,17 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 	@Override
 	public ImcExpr visit(AbsRecExpr recExpr, Stack<Frame> visArg) {
 		ImcExpr imcRecExpr = recExpr.record.accept(this, null);
+		if (recExpr.record instanceof AbsRecExpr) {
+			// record of type record access (e.g. a.b.c) needing address
+			imcRecExpr = ((ImcMEM) imcRecExpr).addr;
+			ImcGen.exprImCode.put(recExpr.record, imcRecExpr);
+		} else if (recExpr.record instanceof AbsVarName) {
+			// absolute access get only name address without (mem(name))
+			if (Frames.accesses.get((AbsVarDecl) SemAn.declAt().get(((AbsVarName) recExpr.record))) instanceof AbsAccess) {
+				imcRecExpr = ((ImcMEM) imcRecExpr).addr;
+				ImcGen.exprImCode.put(recExpr.record, imcRecExpr);
+			}
+		}
 		recExpr.comp.accept(this, null);
 		long compOffset = ((RelAccess) Frames.accesses.get((AbsVarDecl) SemAn.declAt().get(recExpr.comp))).offset;
 		imcRecExpr = new ImcMEM(new ImcBINOP(ImcBINOP.Oper.ADD, imcRecExpr, new ImcCONST(compOffset)));
@@ -143,9 +155,8 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 		ImcExpr imcValue = funDef.value.accept(this, null);
 		depth = prevDepth;
 		Frame funFrame = Frames.frames.get(funDef);
-		imcValue = new ImcSEXPR(new ImcLABEL(funFrame.label), imcValue);
-		if (ImcGen.useFunLabel) imcValue = ImcGen.exprImCode.put(funDef.value, imcValue);
-		return imcValue;
+		if (ImcGen.useFunLabel) imcValue = new ImcSEXPR(new ImcLABEL(funFrame.label), imcValue);
+		return ImcGen.exprImCode.put(funDef.value, imcValue);
 	}
 
 	@Override
@@ -161,7 +172,12 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 	public ImcExpr visit(AbsUnExpr unExpr, Stack<Frame> visArg) {
 		ImcExpr imcUnExpr = unExpr.subExpr.accept(this, null);
 		switch (unExpr.oper) {
-			case ADD: case MEM:
+			case ADD:
+				break;
+			case MEM:
+				if(imcUnExpr instanceof ImcMEM){
+					imcUnExpr = ((ImcMEM) imcUnExpr).addr;
+				}
 				break;
 			case SUB:
 				imcUnExpr = new ImcUNOP(ImcUNOP.Oper.NEG, imcUnExpr);
@@ -188,7 +204,7 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 			Frame funFrame = Frames.frames.get((AbsFunDef) funDecl);
 			if (funFrame.depth == 1) {
 				// global call
-				args.add(new ImcNAME(funFrame.label));
+				if (ImcGen.useFunLabel) args.add(new ImcNAME(funFrame.label));
 				if (ImcGen.useSLinGlFunCall) args.add(new ImcCONST(0));
 			} else {
 				// local call
@@ -197,7 +213,7 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 
 				if (numberOfFetches < 0) {
 					// child function
-					funExpr = new ImcTEMP(ImcGen.FP);
+					funExpr = new ImcMEM(new ImcTEMP(ImcGen.FP));
 				} else {
 					// parent function
 					funExpr = new ImcMEM(new ImcTEMP(ImcGen.FP));
@@ -216,9 +232,9 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 			}
 			return ImcGen.exprImCode.put(funName, new ImcCALL(funFrame.label, args));
 		} else {
-			if(ImcGen.useCallDecl){
+			if (ImcGen.useCallDecl) {
 				Label label = new Label(funDecl.name);
-				args.add(new ImcNAME(label));
+				if (ImcGen.useFunLabel) args.add(new ImcNAME(label));
 				if (ImcGen.useSLinGlFunCall) args.add(new ImcCONST(0));
 				// prepare arguments
 				for (AbsExpr arg : funName.args.args()) {
@@ -251,7 +267,13 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 		ImcExpr varExpr = null;
 		if (varAccess instanceof AbsAccess) {
 			Label varLabel = ((AbsAccess) varAccess).label;
-			varExpr = new ImcMEM(new ImcNAME(varLabel));
+			if(varDecl.type instanceof AbsArrType){
+				// array has only address
+				varExpr = new ImcNAME(varLabel);
+			} else {
+				// else pass value
+				varExpr = new ImcMEM(new ImcNAME(varLabel));
+			}
 		} else if (varAccess instanceof RelAccess) {
 			RelAccess relAccess = ((RelAccess) varAccess);
 			ImcCONST imcOffset = new ImcCONST(relAccess.offset);

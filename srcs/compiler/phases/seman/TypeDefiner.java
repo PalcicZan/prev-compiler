@@ -17,7 +17,7 @@ import compiler.phases.seman.type.*;
  */
 public class TypeDefiner implements AbsVisitor<SemType, Object> {
 
-	private static ConstIntEvaluator constIntEvaluator = new ConstIntEvaluator();
+	private ConstIntEvaluator constIntEvaluator = new ConstIntEvaluator();
 	private static final boolean onlyPositiveArrLen = true;
 
 	@Override

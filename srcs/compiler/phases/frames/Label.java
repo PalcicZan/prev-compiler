@@ -28,4 +28,8 @@ public class Label {
 		this.name = "_" + name;
 	}
 
+	public static void reset(){
+		count = 0;
+	}
+
 }

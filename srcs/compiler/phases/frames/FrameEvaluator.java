@@ -14,7 +14,7 @@ public class FrameEvaluator extends AbsFullVisitor<Long, Long> {
 	private static final boolean relStaticDepth = false;
 
 	// stack frames
-	private static Stack<FrameAttr> stackFrames;
+	private Stack<FrameAttr> stackFrames;
 
 	// frame
 	private class FrameAttr {

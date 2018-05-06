@@ -16,9 +16,9 @@ import compiler.phases.seman.type.*;
  */
 public class TypeChecker implements AbsVisitor<SemType, Object> {
 
-	private static TypeDeclarator typeDeclarator = new TypeDeclarator();
-	private static TypeDefiner typeDefiner = new TypeDefiner();
-	private static TypeTester typeTester = new TypeTester();
+	private TypeDeclarator typeDeclarator = new TypeDeclarator();
+	private TypeDefiner typeDefiner = new TypeDefiner();
+	private TypeTester typeTester = new TypeTester();
 
 	private static final boolean onlyActualTypes = false;
 

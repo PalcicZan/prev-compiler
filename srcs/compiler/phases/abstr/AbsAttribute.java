@@ -63,4 +63,13 @@ public class AbsAttribute<Node, Value> {
 		lock = true;
 	}
 
+	/**
+	 * Resets mapping of attributes and unlocks modifications.
+	 * For test purposes only. Use with caution.
+	 */
+	public void reset(){
+		mapping = new HashMap<Node, Value>();
+		lock = false;
+	}
+
 }

@@ -22,7 +22,7 @@ public class Main {
 	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode";
 
 	/** Values of command line arguments. */
-	private static HashMap<String, String> cmdLine = new HashMap<String, String>();
+	public static HashMap<String, String> cmdLine = new HashMap<String, String>();
 
 	/**
 	 * Returns the value of a command line argument.
@@ -171,7 +171,7 @@ public class Main {
 				Report.info("Linear intermediate code generation complete.");
 
 				new Interpreter().execute();
-				if (cmdLine.get("--target-phase").equals("imcgen"))
+				if (cmdLine.get("--target-phase").equals("lincode"))
 					break;
 
 				int endWarnings = Report.numOfWarnings();

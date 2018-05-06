@@ -20,4 +20,8 @@ public class Temp {
 		count++;
 	}
 
+	public static void reset(){
+		count = 0;
+	}
+
 }

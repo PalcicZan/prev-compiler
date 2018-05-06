@@ -1,6 +1,7 @@
 package compiler.phases.lincode;
 
 import java.util.*;
+
 import common.report.*;
 import compiler.phases.frames.*;
 import compiler.phases.imcgen.*;
@@ -9,7 +10,7 @@ import compiler.phases.imcgen.code.*;
 public class Interpreter {
 
 	enum DEBUG {
-		NONE, FULL
+		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, FULL
 	}
 
 	public DEBUG debug = DEBUG.NONE;
@@ -26,6 +27,8 @@ public class Interpreter {
 	private long SP;
 
 	private long HP;
+
+	public static long RV;
 
 	public void execute() {
 
@@ -47,7 +50,7 @@ public class Interpreter {
 
 	public void execute(CodeFragment codeFragment) {
 		tmp.push(new HashMap<Temp, Long>());
-		
+
 		if (debug == DEBUG.FULL)
 			System.err.println("ENTER: " + codeFragment.frame.label.name);
 		if (debug == DEBUG.FULL) {
@@ -70,7 +73,7 @@ public class Interpreter {
 		do {
 			ImcStmt stmt = codeFragment.stmts().get(PC++);
 			// Fix
-			if(stmt instanceof ImcLABEL&&((ImcLABEL)stmt).label.name.equals(codeFragment.endLabel.name)) break;
+			if (stmt instanceof ImcLABEL && ((ImcLABEL) stmt).label.name.equals(codeFragment.endLabel.name)) break;
 			Label label = stmt.accept(new CodeInterpreter(), null);
 			if (label != null) {
 				if (label.name.equals(codeFragment.endLabel.name))
@@ -101,7 +104,7 @@ public class Interpreter {
 		if (debug == DEBUG.FULL) {
 			System.err.println("SP=" + new Long(SP));
 		}
-
+		RV = tmpLD(codeFragment.RV);
 		tmp.pop();
 	}
 
@@ -194,34 +197,34 @@ public class Interpreter {
 			Long fstExpr = binOp.fstExpr.accept(this, null);
 			Long sndExpr = binOp.sndExpr.accept(this, null);
 			switch (binOp.oper) {
-			case IOR:
-				return new Long(((fstExpr > 0) | (sndExpr > 0)) ? 1 : 0);
-			case XOR:
-				return new Long(((fstExpr > 0) ^ (sndExpr > 0)) ? 1 : 0);
-			case AND:
-				return new Long(((fstExpr > 0) & (sndExpr > 0)) ? 1 : 0);
-			case EQU:
-				return new Long((fstExpr == sndExpr) ? 1 : 0);
-			case NEQ:
-				return new Long((fstExpr != sndExpr) ? 1 : 0);
-			case GEQ:
-				return new Long((fstExpr >= sndExpr) ? 1 : 0);
-			case LEQ:
-				return new Long((fstExpr <= sndExpr) ? 1 : 0);
-			case GTH:
-				return new Long((fstExpr > sndExpr) ? 1 : 0);
-			case LTH:
-				return new Long((fstExpr < sndExpr) ? 1 : 0);
-			case ADD:
-				return fstExpr + sndExpr;
-			case SUB:
-				return fstExpr - sndExpr;
-			case MUL:
-				return fstExpr * sndExpr;
-			case DIV:
-				return fstExpr / sndExpr;
-			case MOD:
-				return fstExpr % sndExpr;
+				case IOR:
+					return new Long(((fstExpr > 0) | (sndExpr > 0)) ? 1 : 0);
+				case XOR:
+					return new Long(((fstExpr > 0) ^ (sndExpr > 0)) ? 1 : 0);
+				case AND:
+					return new Long(((fstExpr > 0) & (sndExpr > 0)) ? 1 : 0);
+				case EQU:
+					return new Long((fstExpr == sndExpr) ? 1 : 0);
+				case NEQ:
+					return new Long((fstExpr != sndExpr) ? 1 : 0);
+				case GEQ:
+					return new Long((fstExpr >= sndExpr) ? 1 : 0);
+				case LEQ:
+					return new Long((fstExpr <= sndExpr) ? 1 : 0);
+				case GTH:
+					return new Long((fstExpr > sndExpr) ? 1 : 0);
+				case LTH:
+					return new Long((fstExpr < sndExpr) ? 1 : 0);
+				case ADD:
+					return fstExpr + sndExpr;
+				case SUB:
+					return fstExpr - sndExpr;
+				case MUL:
+					return fstExpr * sndExpr;
+				case DIV:
+					return fstExpr / sndExpr;
+				case MOD:
+					return fstExpr % sndExpr;
 			}
 			throw new Report.InternalError();
 		}
@@ -274,10 +277,10 @@ public class Interpreter {
 		public Long visit(ImcUNOP unOp, Object visArg) {
 			Long subExpr = unOp.subExpr.accept(this, null);
 			switch (unOp.oper) {
-			case NOT:
-				return new Long((subExpr + 1) % 2);
-			case NEG:
-				return new Long(-subExpr);
+				case NOT:
+					return new Long((subExpr + 1) % 2);
+				case NEG:
+					return new Long(-subExpr);
 			}
 			throw new Report.InternalError();
 		}

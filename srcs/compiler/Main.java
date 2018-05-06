@@ -18,6 +18,12 @@ import compiler.phases.lincode.*;
  */
 public class Main {
 
+	public enum DEBUG {
+		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, FULL
+	}
+
+	public static DEBUG debug = DEBUG.NONE;
+
 	/** All valid phases of the compiler. */
 	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode";
 

@@ -8,3 +8,5 @@ out/
 # Data
 data/tests/*
 data/*/*/*.xml
+
+lib/

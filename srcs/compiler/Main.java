@@ -6,10 +6,11 @@ import common.report.*;
 import compiler.phases.lexan.*;
 import compiler.phases.synan.*;
 import compiler.phases.abstr.*;
-import compiler.phases.frames.*;
 import compiler.phases.seman.*;
+import compiler.phases.frames.*;
 import compiler.phases.imcgen.*;
 import compiler.phases.lincode.*;
+import compiler.phases.asmgen.*;
 
 /**
  * The compiler.
@@ -176,9 +177,18 @@ public class Main {
 
 				Report.info("Linear intermediate code generation complete.");
 
-				new Interpreter().execute();
-				if (cmdLine.get("--target-phase").equals("lincode"))
+				if (cmdLine.get("--target-phase").equals("lincode")) {
+					new Interpreter().execute();
 					break;
+				}
+
+				try (AsmGen asmGen = new AsmGen()) {
+					Abstr.absTree().accept(new Fragmenter(), null);
+				}
+
+				if (cmdLine.get("--target-phase").equals("asmgen"))
+					break;
+
 
 				int endWarnings = Report.numOfWarnings();
 				if (begWarnings != endWarnings)

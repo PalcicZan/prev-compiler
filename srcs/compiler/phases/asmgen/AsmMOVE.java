@@ -1,6 +1,8 @@
 package compiler.phases.asmgen;
 
 import java.util.*;
+
+import common.logger.Logger;
 import common.report.*;
 import compiler.phases.frames.*;
 

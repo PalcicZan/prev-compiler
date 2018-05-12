@@ -1,5 +1,6 @@
 package compiler;
 
+import java.io.File;
 import java.util.*;
 
 import common.report.*;
@@ -11,6 +12,7 @@ import compiler.phases.frames.*;
 import compiler.phases.imcgen.*;
 import compiler.phases.lincode.*;
 import compiler.phases.asmgen.*;
+import junitx.framework.FileAssert;
 
 /**
  * The compiler.
@@ -20,13 +22,13 @@ import compiler.phases.asmgen.*;
 public class Main {
 
 	public enum DEBUG {
-		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, FULL
+		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, ASMGEN, FULL
 	}
 
 	public static DEBUG debug = DEBUG.NONE;
 
 	/** All valid phases of the compiler. */
-	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode";
+	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode|asmgen";
 
 	/** Values of command line arguments. */
 	public static HashMap<String, String> cmdLine = new HashMap<String, String>();
@@ -41,6 +43,9 @@ public class Main {
 	public static String cmdLineArgValue(String cmdLineArgName) {
 		return cmdLine.get(cmdLineArgName);
 	}
+
+	/** Notify user when each phase is completed */
+	public static boolean progress = false;
 
 	/**
 	 * The compiler's {@code main} method.
@@ -99,6 +104,9 @@ public class Main {
 				cmdLine.put("--target-phase", phases.replaceFirst("^.*\\|", ""));
 			}
 
+			if (cmdLine.get("--progress") != null) {
+				progress = true;
+			}
 			// Compile phase by phase.
 			do {
 
@@ -114,14 +122,14 @@ public class Main {
 					break;
 				}
 
-				Report.info("Lexical analysis complete.");
+				if (progress) Report.info("Lexical analysis complete.");
 
 				// Syntax analysis.
 				try (SynAn synAn = new SynAn()) {
 					synAn.parser();
 				}
 
-				Report.info("Syntax analysis complete.");
+				if (progress) Report.info("Syntax analysis complete.");
 
 				if (cmdLine.get("--target-phase").equals("synan"))
 					break;
@@ -145,7 +153,7 @@ public class Main {
 						Report.warning("The program must return a result of type int.");
 				}
 
-				Report.info("Semantic analysis complete.");
+				if (progress) Report.info("Semantic analysis complete.");
 
 				if (cmdLine.get("--target-phase").equals("seman"))
 					break;
@@ -155,7 +163,7 @@ public class Main {
 					Abstr.absTree().accept(new FrameEvaluator(), null);
 				}
 
-				Report.info("Frames and access evaluation complete.");
+				if (progress) Report.info("Frames and access evaluation complete.");
 
 				if (cmdLine.get("--target-phase").equals("frames"))
 					break;
@@ -165,7 +173,7 @@ public class Main {
 					Abstr.absTree().accept(new ImcExprGenerator(), null);
 				}
 
-				Report.info("Intermediate code generation complete.");
+				if (progress) Report.info("Intermediate code generation complete.");
 
 				if (cmdLine.get("--target-phase").equals("imcgen"))
 					break;
@@ -175,7 +183,7 @@ public class Main {
 					Abstr.absTree().accept(new Fragmenter(), null);
 				}
 
-				Report.info("Linear intermediate code generation complete.");
+				if (progress) Report.info("Linear intermediate code generation complete.");
 
 				if (cmdLine.get("--target-phase").equals("lincode")) {
 					new Interpreter().execute();
@@ -183,12 +191,13 @@ public class Main {
 				}
 
 				try (AsmGen asmGen = new AsmGen()) {
-					Abstr.absTree().accept(new Fragmenter(), null);
+					asmGen.generateInstructions(LinCode.fragments());
 				}
+
+				if (progress) Report.info("Generation of machine code instructions complete.");
 
 				if (cmdLine.get("--target-phase").equals("asmgen"))
 					break;
-
 
 				int endWarnings = Report.numOfWarnings();
 				if (begWarnings != endWarnings)

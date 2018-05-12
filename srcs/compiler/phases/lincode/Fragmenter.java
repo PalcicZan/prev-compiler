@@ -11,7 +11,7 @@ import compiler.phases.imcgen.code.*;
 
 public class Fragmenter extends AbsFullVisitor<Object, Object> {
 
-	/** To force temporal variables on each step **/
+	/** Flags **/
 	private static final boolean useBinopTemp = true;
 	private static final boolean useShortArrAcc = true;
 	private static final boolean useTempCall = true;

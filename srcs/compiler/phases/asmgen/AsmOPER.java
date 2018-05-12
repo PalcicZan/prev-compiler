@@ -2,6 +2,7 @@ package compiler.phases.asmgen;
 
 import java.util.*;
 
+import common.logger.Logger;
 import compiler.phases.frames.*;
 
 /**
@@ -73,4 +74,14 @@ public class AsmOPER extends AsmInstr {
 		return instruction;
 	}
 
+	@Override
+	public void log(Logger logger) {
+		if (logger == null)
+			return;
+		logger.begElement("asmoper");
+		logger.addAttribute("label", "");
+		logger.addAttribute("token", toString());
+		logger.endElement();
+
+	}
 }

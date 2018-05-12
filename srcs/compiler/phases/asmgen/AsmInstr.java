@@ -1,6 +1,8 @@
 package compiler.phases.asmgen;
 
 import java.util.*;
+
+import common.logger.Loggable;
 import compiler.phases.frames.*;
 
 /**
@@ -9,7 +11,7 @@ import compiler.phases.frames.*;
  * @author sliva
  *
  */
-public abstract class AsmInstr {
+public abstract class AsmInstr implements Loggable {
 
 	/**
 	 * list of temporaries used by this instruction.

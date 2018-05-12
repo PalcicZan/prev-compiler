@@ -1,6 +1,8 @@
 package compiler.phases.asmgen;
 
 import java.util.*;
+
+import common.logger.Logger;
 import compiler.phases.frames.*;
 
 /**
@@ -29,4 +31,13 @@ public class AsmLABEL extends AsmOPER {
 		return label.name;
 	}
 
+	@Override
+	public void log(Logger logger) {
+		if (logger == null)
+			return;
+		logger.begElement("asmlabel");
+		logger.addAttribute("label", label.name);
+		logger.addAttribute("token", "");
+		logger.endElement();
+	}
 }

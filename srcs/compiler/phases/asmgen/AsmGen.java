@@ -1,5 +1,6 @@
 package compiler.phases.asmgen;
 
+import compiler.Main;
 import compiler.phases.Phase;
 import compiler.phases.imcgen.code.ImcStmt;
 import compiler.phases.lincode.CodeFragment;
@@ -61,6 +62,7 @@ public class AsmGen extends Phase {
 
 	@Override
 	public void close() {
+		if(Main.cmdLine.get("--target-phase").equals("asmgen"))
 		for (AsmInstr instructions : instructions()) {
 			if(!printOnAdd) System.out.println(instructions);
 			instructions.log(logger);

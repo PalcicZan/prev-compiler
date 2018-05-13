@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.9.0](https://github.com/PalcicZan/prev-compiler/tree/v0.9.0) (13.05.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.8.0...v0.9.0)
+
+**Implemented enhancements:**
+
+- Generation of machine code instructions [\#8](https://github.com/PalcicZan/prev-compiler/issues/8)
+
 ## [v0.8.0](https://github.com/PalcicZan/prev-compiler/tree/v0.8.0) (06.05.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.7.0...v0.8.0)
 

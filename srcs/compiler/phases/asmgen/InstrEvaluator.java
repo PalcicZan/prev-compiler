@@ -121,8 +121,13 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 			// is second operand 16-bit constant
 			if (isPositiveConst) {
 				// use constant value
-				instrBuilder.append(((ImcCONST) binOp.sndExpr).value);
+				long value = ((ImcCONST) binOp.sndExpr).value;
+				instrBuilder.append(value);
 				AsmGen.removeLast();
+				if(value == 0 && uses.size() == 1 && defs.size() == 1){
+					AsmGen.add(new AsmMOVE(instrBuilder.toString(), uses, defs, null));
+					return result;
+				}
 			} else if (binOp.oper == ImcBINOP.Oper.ADD && isConst8bit && memType == MemType.NONE) {
 				// substitute instead of addition
 				instrBuilder.replace(0, 3, "SUB");
@@ -202,7 +207,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 		// set low bits
 		long l = (imcConst & 0xFFFF);
 		boolean isSet = false;
-		if (l > 0) {
+		if (l != 0) {
 			if (imcConst < 0 && imcConst > -256) {
 				AsmGen.add(new AsmOPER("NEG `d0, 0, " + Math.abs(imcConst), null, defs, null));
 				return result;
@@ -214,7 +219,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 
 		// set medium low bits
 		long ml = (imcConst >> 16) & 0xFFFF;
-		if (ml > 0) {
+		if (ml != 0) {
 			if (isSet) AsmGen.add(new AsmOPER("INCML `d0, " + ml, null, defs, null));
 			else AsmGen.add(new AsmOPER("SETML `d0, " + ml, null, defs, null));
 			isSet = true;
@@ -222,7 +227,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 
 		// set medium high bits
 		long mh = (imcConst >> 32) & 0xFFFF;
-		if (mh > 0) {
+		if (mh != 0) {
 			if (isSet) AsmGen.add(new AsmOPER("INCMH `d0, " + mh, null, defs, null));
 			else AsmGen.add(new AsmOPER("SETMH `d0, " + mh, null, defs, null));
 			isSet = true;
@@ -230,7 +235,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 
 		// set high high bits
 		long h = (imcConst >> 48) & 0xFFFF;
-		if (h > 0) {
+		if (h != 0) {
 			if (isSet) AsmGen.add(new AsmOPER("INCH `d0, " + h, null, defs, null));
 			else AsmGen.add(new AsmOPER("SETH `d0, " + h, null, defs, null));
 		}
@@ -271,7 +276,8 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 	@Override
 	public Object visit(ImcLABEL label, Object visArg) {
 		dump(label, label.label.name);
-		AsmGen.add(new AsmLABEL(label.label));
+		AsmInstr instrLabel = new AsmLABEL(label.label);
+		AsmGen.addLabel(label.label, instrLabel);
 		return null;
 	}
 

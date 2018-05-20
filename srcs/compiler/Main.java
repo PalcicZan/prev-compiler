@@ -1,6 +1,5 @@
 package compiler;
 
-import java.io.File;
 import java.util.*;
 
 import common.report.*;
@@ -12,7 +11,7 @@ import compiler.phases.frames.*;
 import compiler.phases.imcgen.*;
 import compiler.phases.lincode.*;
 import compiler.phases.asmgen.*;
-import junitx.framework.FileAssert;
+import compiler.phases.liveness.*;
 
 /**
  * The compiler.
@@ -22,13 +21,13 @@ import junitx.framework.FileAssert;
 public class Main {
 
 	public enum DEBUG {
-		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, ASMGEN, FULL
+		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, ASMGEN, LIVENESS, FULL
 	}
 
 	public static DEBUG debug = DEBUG.NONE;
 
 	/** All valid phases of the compiler. */
-	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode|asmgen";
+	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode|asmgen|liveness";
 
 	/** Values of command line arguments. */
 	public static HashMap<String, String> cmdLine = new HashMap<String, String>();
@@ -190,6 +189,7 @@ public class Main {
 					break;
 				}
 
+				// Assembly code generation.
 				try (AsmGen asmGen = new AsmGen()) {
 					asmGen.generateInstructions(LinCode.fragments());
 				}
@@ -197,6 +197,16 @@ public class Main {
 				if (progress) Report.info("Generation of machine code instructions complete.");
 
 				if (cmdLine.get("--target-phase").equals("asmgen"))
+					break;
+
+				// Liveness analysis.
+				try (LiveAn liveAn = new LiveAn()) {
+					liveAn.livenessAnalysis(AsmGen.instructions());
+				}
+
+				if (progress) Report.info("Liveness analysis complete.");
+
+				if (cmdLine.get("--target-phase").equals("liveness"))
 					break;
 
 				int endWarnings = Report.numOfWarnings();

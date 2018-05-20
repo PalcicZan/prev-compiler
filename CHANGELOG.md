@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.9.1](https://github.com/PalcicZan/prev-compiler/tree/v0.9.1) (20.05.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.9.0...v0.9.1)
+
+**Implemented enhancements:**
+
+- Liveness analysis [\#9](https://github.com/PalcicZan/prev-compiler/issues/9)
+
 ## [v0.9.0](https://github.com/PalcicZan/prev-compiler/tree/v0.9.0) (13.05.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.8.0...v0.9.0)
 

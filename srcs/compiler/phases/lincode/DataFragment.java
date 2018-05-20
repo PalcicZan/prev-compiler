@@ -5,9 +5,8 @@ import compiler.phases.frames.*;
 
 /**
  * A data fragment.
- * 
- * @author sliva
  *
+ * @author sliva
  */
 public class DataFragment extends Fragment {
 
@@ -19,17 +18,15 @@ public class DataFragment extends Fragment {
 
 	/**
 	 * Construct a new data fragment.
-	 * 
-	 * @param label
-	 *            The entry label.
-	 * @param size
-	 *            The size of data.
+	 *
+	 * @param label The entry label.
+	 * @param size  The size of data.
 	 */
 	public DataFragment(Label label, long size) {
 		this.label = label;
 		this.size = size;
 	}
-	
+
 	@Override
 	public void log(Logger logger) {
 		if (logger == null)
@@ -40,4 +37,13 @@ public class DataFragment extends Fragment {
 		logger.endElement();
 	}
 
+	@Override
+	public int compareTo(Fragment other) {
+		if (other instanceof CodeFragment) {
+			return this.label.name.compareTo(((CodeFragment) other).frame.label.name);
+		} else if (other instanceof DataFragment) {
+			return this.label.name.compareTo(((DataFragment) other).label.name);
+		}
+		return 0;
+	}
 }

@@ -28,8 +28,12 @@ public class Label {
 		this.name = "_" + name;
 	}
 
-	public static void reset(){
+	public static void reset() {
 		count = 0;
 	}
 
+	@Override
+	public String toString() {
+		return name;
+	}
 }

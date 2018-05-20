@@ -1,6 +1,7 @@
 package compiler.phases.lincode;
 
 import java.util.*;
+
 import common.logger.*;
 import compiler.phases.frames.*;
 import compiler.phases.imcgen.*;
@@ -10,19 +11,19 @@ public class CodeFragment extends Fragment {
 
 	// The stack frame of function.
 	public final Frame frame;
-	
+
 	// The linearized intermediate code.
 	private final Vector<ImcStmt> stmts;
-	
+
 	// The frame pointer.
 	public final Temp FP;
-	
+
 	// The return value.
 	public final Temp RV;
-	
+
 	// The label the prologue jumps to.
 	public final Label begLabel;
-	
+
 	// The label the epilogue starts with.
 	public final Label endLabel;
 
@@ -38,7 +39,7 @@ public class CodeFragment extends Fragment {
 	public Vector<ImcStmt> stmts() {
 		return stmts;
 	}
-	
+
 	@Override
 	public void log(Logger logger) {
 		if (logger == null)
@@ -49,12 +50,21 @@ public class CodeFragment extends Fragment {
 		logger.addAttribute("beglabel", begLabel.name);
 		logger.addAttribute("endlabel", endLabel.name);
 		frame.log(logger);
-		for (ImcStmt stmt: stmts) {
+		for (ImcStmt stmt : stmts) {
 			logger.begElement("imclin");
 			stmt.accept(new ImcLogger(), logger);
 			logger.endElement();
 		}
 		logger.endElement();
 	}
-	
+
+	@Override
+	public int compareTo(Fragment other) {
+		if (other instanceof CodeFragment) {
+			return this.frame.label.name.compareTo(((CodeFragment) other).frame.label.name);
+		} else if (other instanceof DataFragment) {
+			return this.frame.label.name.compareTo(((DataFragment) other).label.name);
+		}
+		return 0;
+	}
 }

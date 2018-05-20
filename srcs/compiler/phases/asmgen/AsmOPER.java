@@ -24,6 +24,13 @@ public class AsmOPER extends AsmInstr {
 	/** The list of labels this instruction can jump to. */
 	private final Vector<Label> jumps;
 
+	private final Set<Temp> in;
+	private final Set<Temp> out;
+	private final Set<Temp> inTmp;
+	private final Set<Temp> outTmp;
+	private final Set<AsmInstr> succ;
+	private final Set<AsmInstr> pred;
+
 	/**
 	 * Constructs a new assembly instruction.
 	 *
@@ -37,6 +44,13 @@ public class AsmOPER extends AsmInstr {
 		this.uses = uses == null ? new Vector<Temp>() : uses;
 		this.defs = defs == null ? new Vector<Temp>() : defs;
 		this.jumps = jumps == null ? new Vector<Label>() : jumps;
+
+		this.in = new HashSet<>();
+		this.out = new HashSet<>();
+		this.inTmp = new HashSet<>();
+		this.outTmp = new HashSet<>();
+		this.succ = new HashSet<>();
+		this.pred = new HashSet<>();
 	}
 
 	@Override
@@ -53,6 +67,28 @@ public class AsmOPER extends AsmInstr {
 	public Vector<Label> jumps() {
 		return new Vector<Label>(jumps);
 	}
+
+	@Override
+	public Set<AsmInstr> pred() {
+		return pred;
+	}
+
+	@Override
+	public Set<AsmInstr> succ() { return succ; }
+
+	@Override
+	public Set<Temp> in() {
+		return in;
+	}
+
+	public Set<Temp> out() { return out; }
+
+	public Set<Temp> inTmp() {
+		return inTmp;
+	}
+
+	public Set<Temp> outTmp() { return outTmp; }
+
 
 	@Override
 	public String toString() {

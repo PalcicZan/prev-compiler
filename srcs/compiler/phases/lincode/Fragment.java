@@ -4,10 +4,9 @@ import common.logger.*;
 
 /**
  * A fragment.
- * 
- * @author sliva
  *
+ * @author sliva
  */
-public abstract class Fragment implements Loggable {
+public abstract class Fragment implements Loggable, Comparable<Fragment> {
 
 }

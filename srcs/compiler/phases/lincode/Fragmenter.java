@@ -56,7 +56,7 @@ public class Fragmenter extends AbsFullVisitor<Object, Object> {
 			}
 			blocks.lastElement().add(stmt);
 		}
-		if(Main.debug == Main.DEBUG.FULL){
+		if (Main.debug == Main.DEBUG.FULL) {
 			for (Vector block : blocks) {
 				dump(null, Integer.toString(block.size()));
 				dump(null, ((ImcLABEL) block.firstElement()).label.name);
@@ -69,31 +69,31 @@ public class Fragmenter extends AbsFullVisitor<Object, Object> {
 	private Vector<ImcStmt> optTraces(Vector<ImcStmt> stmts) {
 		LinkedList<Vector<ImcStmt>> blocks = new LinkedList<>(getBlocks(stmts));
 		HashMap<Label, Vector<ImcStmt>> labelBlocks = new HashMap<>();
-		for(Vector<ImcStmt> block:blocks){
-			labelBlocks.put(((ImcLABEL)block.firstElement()).label, block);
+		for (Vector<ImcStmt> block : blocks) {
+			labelBlocks.put(((ImcLABEL) block.firstElement()).label, block);
 		}
 		HashSet<Vector<ImcStmt>> marked = new HashSet<>();
 		Vector<ImcStmt> newStmts = new Vector<>();
 		while (blocks.size() > 0) {
 			Vector<ImcStmt> currBlock = blocks.removeFirst();
 			Vector<ImcStmt> trace = new Vector<>();
-			while(!marked.contains(currBlock)){
+			while (!marked.contains(currBlock)) {
 				marked.add(currBlock);
 				trace.addAll(currBlock);
 				ImcStmt jump = currBlock.lastElement();
-				if(jump instanceof ImcJUMP){
-					Vector<ImcStmt> succ = labelBlocks.get(((ImcJUMP)jump).label);
-					if(!marked.contains(succ)) {
+				if (jump instanceof ImcJUMP) {
+					Vector<ImcStmt> succ = labelBlocks.get(((ImcJUMP) jump).label);
+					if (!marked.contains(succ)) {
 						currBlock = succ;
 					}
-				} else if(jump instanceof ImcCJUMP){
-					Vector<ImcStmt> succ = labelBlocks.get(((ImcCJUMP)jump).negLabel);
-					if(!marked.contains(succ)) {
+				} else if (jump instanceof ImcCJUMP) {
+					Vector<ImcStmt> succ = labelBlocks.get(((ImcCJUMP) jump).negLabel);
+					if (!marked.contains(succ)) {
 						currBlock = succ;
 						continue;
 					}
-					succ = labelBlocks.get(((ImcCJUMP)jump).posLabel);
-					if(!marked.contains(succ)) {
+					succ = labelBlocks.get(((ImcCJUMP) jump).posLabel);
+					if (!marked.contains(succ)) {
 						currBlock = succ;
 					}
 				}
@@ -227,13 +227,16 @@ public class Fragmenter extends AbsFullVisitor<Object, Object> {
 		dump(binExpr, "=== Binary expression ===");
 		ImcTEMP result = new ImcTEMP(new Temp());
 		ImcExpr t1 = (ImcExpr) binExpr.fstExpr.accept(this, null);
+		// first operand
 		if (useBinopTemp && !(t1 instanceof ImcTEMP)) {
 			ImcTEMP t1Temp = new ImcTEMP(new Temp());
 			fragmentStmts.add(new ImcMOVE(t1Temp, t1));
 			t1 = t1Temp;
 		}
 		ImcExpr t2 = (ImcExpr) binExpr.sndExpr.accept(this, null);
-		if (useBinopTemp && !(t2 instanceof ImcTEMP)) {
+		// second operand
+		// leave constants as they are or create temp if not already
+		if (!(t2 instanceof ImcCONST) && useBinopTemp && !(t2 instanceof ImcTEMP)) {
 			ImcTEMP t2Temp = new ImcTEMP(new Temp());
 			fragmentStmts.add(new ImcMOVE(t2Temp, t2));
 			t2 = t2Temp;
@@ -320,7 +323,7 @@ public class Fragmenter extends AbsFullVisitor<Object, Object> {
 			imcStmts.addAll(fragmentStmts);
 			imcStmts.add(stmt);
 			imcStmts.add(new ImcLABEL(endLabel));
-			if(useOptTraces) imcStmts = optTraces(imcStmts);
+			if (useOptTraces) imcStmts = optTraces(imcStmts);
 			mainFrgm.stmts().addAll(imcStmts);
 			return result;
 		} else {
@@ -351,7 +354,7 @@ public class Fragmenter extends AbsFullVisitor<Object, Object> {
 			canStmts.addAll(fragmentStmts);
 			canStmts.add(stmt);
 			canStmts.add(new ImcLABEL(endLabel));
-			if(useOptTraces) canStmts = optTraces(canStmts);
+			if (useOptTraces) canStmts = optTraces(canStmts);
 			CodeFragment fragment = new CodeFragment(frame, canStmts, ImcGen.FP, RV, begLabel, endLabel);
 			LinCode.add(fragment);
 		}

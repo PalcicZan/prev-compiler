@@ -61,4 +61,7 @@ public abstract class AsmInstr implements Loggable {
 	 */
 	public abstract String toString(HashMap<Temp, Integer> regs);
 
+	public abstract String toString(boolean instr);
+
+
 }

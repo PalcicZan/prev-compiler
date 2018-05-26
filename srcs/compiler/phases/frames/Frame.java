@@ -17,7 +17,7 @@ public class Frame implements Loggable {
 	public final int depth;
 
 	/** The size of the frame. */
-	public final long size;
+	public long size;
 
 	/** The size of the block of local variables within a frame. */
 	public final long locsSize;

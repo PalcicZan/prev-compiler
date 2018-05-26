@@ -67,7 +67,7 @@ public class AsmGen extends Phase {
 					AsmGen.add(new AsmOPER(titleComment, null, null, null));
 				}
 				for (ImcStmt stmt : ((CodeFragment) fragment).stmts()) {
-					stmt.accept(new InstrEvaluator(), null);
+					stmt.accept(new InstrEvaluator((CodeFragment)fragment), null);
 				}
 				if (addFragmentComment) {
 					String endComment = new String(new char[titleComment.length()-2]).replace("\0", "=");

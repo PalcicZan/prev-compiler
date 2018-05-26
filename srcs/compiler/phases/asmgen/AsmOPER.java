@@ -55,12 +55,14 @@ public class AsmOPER extends AsmInstr {
 
 	@Override
 	public Vector<Temp> uses() {
-		return new Vector<Temp>(uses);
+//		return new Vector<Temp>(uses);
+		return uses;
 	}
 
 	@Override
 	public Vector<Temp> defs() {
-		return new Vector<Temp>(defs);
+//		return new Vector<Temp>(defs);
+		return defs;
 	}
 
 	@Override
@@ -108,6 +110,12 @@ public class AsmOPER extends AsmInstr {
 		for (int i = 0; i < defs.size(); i++)
 			instruction = instruction.replace("`d" + i, "$" + regs.get(defs.get(i)));
 		return instruction;
+	}
+
+
+	@Override
+	public String toString(boolean instr) {
+		return this.instr;
 	}
 
 	@Override

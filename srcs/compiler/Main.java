@@ -12,6 +12,7 @@ import compiler.phases.imcgen.*;
 import compiler.phases.lincode.*;
 import compiler.phases.asmgen.*;
 import compiler.phases.liveness.*;
+import compiler.phases.regalloc.*;
 
 /**
  * The compiler.
@@ -21,13 +22,17 @@ import compiler.phases.liveness.*;
 public class Main {
 
 	public enum DEBUG {
-		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, ASMGEN, LIVENESS, FULL
+		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, ASMGEN, LIVENESS, REGALLOC, FULL
 	}
 
 	public static DEBUG debug = DEBUG.NONE;
 
 	/** All valid phases of the compiler. */
-	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode|asmgen|liveness";
+	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode|asmgen|liveness|regalloc";
+
+	/** Number of available physical registers. */
+	public static int nReg = 8;
+	public static String FPreg = "$254";
 
 	/** Values of command line arguments. */
 	public static HashMap<String, String> cmdLine = new HashMap<String, String>();
@@ -207,6 +212,14 @@ public class Main {
 				if (progress) Report.info("Liveness analysis complete.");
 
 				if (cmdLine.get("--target-phase").equals("liveness"))
+					break;
+
+				// Register allocation.
+				try (RegAlloc regAlloc = new RegAlloc(LiveAn.interferenceGraphs)) {	}
+
+				if (progress) Report.info("Register allocation complete.");
+
+				if (cmdLine.get("--target-phase").equals("regalloc"))
 					break;
 
 				int endWarnings = Report.numOfWarnings();

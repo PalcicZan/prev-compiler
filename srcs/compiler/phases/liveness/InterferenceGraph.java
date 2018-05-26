@@ -4,49 +4,85 @@ import compiler.Main;
 import compiler.phases.asmgen.AsmInstr;
 import compiler.phases.asmgen.AsmMOVE;
 import compiler.phases.frames.Temp;
+import compiler.phases.lincode.CodeFragment;
 
 import java.util.*;
 
 public class InterferenceGraph {
 
-	private HashMap<Temp, Set<Temp>> interferenceGraph;
+	/** Graph and instructions */
+	public HashMap<Temp, Node> interferenceGraph;
+	public LinkedList<AsmInstr> instructions;
+	public CodeFragment fragment;
+
+	/** Redundant edges */
 	private HashMap<Temp, Set<Temp>> redundantEdges;
 
+
 	/** Dump information for each instruction */
-	private void dump(AsmInstr instr, String msg) {
+	protected void dump(AsmInstr instr, String msg) {
 		if (Main.debug == Main.DEBUG.FULL || Main.debug == Main.DEBUG.LIVENESS) {
 			System.out.println(instr != null ? instr.toString() + ": " + msg : msg);
 		}
 	}
 
-	InterferenceGraph(LinkedList<AsmInstr> instructions, boolean useOptInterferenceGraph) {
+	protected InterferenceGraph(CodeFragment codeFragment, LinkedList<AsmInstr> instrs) {
+		fragment = codeFragment;
+		instructions = new LinkedList<>(instrs);
+		buildInterferenceGraph();
+	}
+
+	protected InterferenceGraph(InterferenceGraph interfGraph) {
+		interferenceGraph = interfGraph.interferenceGraph;
+		instructions = interfGraph.instructions;
+		fragment = interfGraph.fragment;
+		redundantEdges = null;
+	}
+
+	public void buildInterferenceGraph() {
 		interferenceGraph = new HashMap<>();
 		redundantEdges = new HashMap<>();
 
-		for (AsmInstr instr : instructions) {
 
+		for (AsmInstr instr : instructions) {
 			for (int i = 0; i < instr.defs().size(); i++) {
 				addNode(instr.defs().get(i));
 			}
 			dump(null, "=== New instruction ===");
 			findRedundantEdges(instr, instr.out());
-			addEdges(instr, instr.in());
-			addEdges(instr, instr.out());
+			addEdges(instr.in());
+			addEdges(instr.out());
 		}
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder intfrGraph = new StringBuilder();
-		for (Map.Entry<Temp, Set<Temp>> entry : interferenceGraph.entrySet()) {
-			intfrGraph.append(entry.getKey()).append(": ").append(((HashSet) entry.getValue()).toString()).append("\n");
+		for (Map.Entry<Temp, Node> entry : interferenceGraph.entrySet()) {
+			intfrGraph.append("% ").append(entry.getValue().toString()).append(": ").append(entry.getValue().edges).append("\n");
 		}
 		return intfrGraph.toString();
 	}
 
-	private void addNode(Temp node) {
-		if (!interferenceGraph.containsKey(node)) {
-			interferenceGraph.put(node, new HashSet<>());
+	private void addNode(Temp temp) {
+		if (!interferenceGraph.containsKey(temp)) {
+			interferenceGraph.put(temp, new Node(temp));
+		}
+	}
+
+	protected void addNode(Node node) {
+		if (!interferenceGraph.containsKey(node.t)) {
+			interferenceGraph.put(node.t, node);
+		}
+	}
+
+	protected void removeNode(Node node, Iterator it) {
+		if (interferenceGraph.containsKey(node.t)) {
+			for (Node neigbour : node.edges) {
+				neigbour.removeEdge(node);
+			}
+			if (it == null) interferenceGraph.remove(node.t);
+			else it.remove();
 		}
 	}
 
@@ -59,22 +95,26 @@ public class InterferenceGraph {
 		}
 
 		dump(null, "EDGE " + curr + "--" + neighbour);
-		interferenceGraph.get(curr).add(neighbour);
-		interferenceGraph.get(neighbour).add(curr);
+
+		Node currNode = interferenceGraph.get(curr);
+		Node neigbourNode = interferenceGraph.get(neighbour);
+
+		currNode.addEdge(neigbourNode);
+		neigbourNode.addEdge(currNode);
+//		neigbourNode.edges.add(currNode);
 	}
 
-	private void markRedundantEdge(Temp curr, Temp neighbour) {
-		if (!redundantEdges.containsKey(curr)) {
-			redundantEdges.put(curr, new HashSet<>());
+	private void addEdges(Set<Temp> instrTemp) {
+		Object[] temp = instrTemp.toArray();
+		for (int i = 0; i < temp.length; i++) {
+			for (int j = i; j < temp.length; j++) {
+				Temp t1 = (Temp) temp[i];
+				Temp t2 = (Temp) temp[j];
+				addNode(t1);
+				addNode(t2);
+				addEdge(t1, t2);
+			}
 		}
-		if (!redundantEdges.containsKey(neighbour)) {
-			redundantEdges.put(neighbour, new HashSet<>());
-		}
-		if (curr == neighbour) return;
-
-		dump(null, "MARK REDUNDANT EDGE " + curr + "-/-" + neighbour);
-		redundantEdges.get(curr).add(neighbour);
-		redundantEdges.get(neighbour).add(curr);
 	}
 
 	private void removeEdge(HashMap<Temp, Set<Temp>> graph, Temp curr, Temp neighbour) {
@@ -91,17 +131,18 @@ public class InterferenceGraph {
 		graph.get(neighbour).remove(curr);
 	}
 
-	private void addEdges(AsmInstr instr, Set<Temp> instrTemp) {
-		Object[] temp = instrTemp.toArray();
-		for (int i = 0; i < temp.length; i++) {
-			for (int j = i; j < temp.length; j++) {
-				Temp t1 = (Temp) temp[i];
-				Temp t2 = (Temp) temp[j];
-				addNode(t1);
-				addNode(t2);
-				addEdge(t1, t2);
-			}
+	private void markRedundantEdge(Temp curr, Temp neighbour) {
+		if (!redundantEdges.containsKey(curr)) {
+			redundantEdges.put(curr, new HashSet<>());
 		}
+		if (!redundantEdges.containsKey(neighbour)) {
+			redundantEdges.put(neighbour, new HashSet<>());
+		}
+		if (curr == neighbour) return;
+
+		dump(null, "MARK REDUNDANT EDGE " + curr + "-/-" + neighbour);
+		redundantEdges.get(curr).add(neighbour);
+		redundantEdges.get(neighbour).add(curr);
 	}
 
 	private void findRedundantEdges(AsmInstr instr, Set<Temp> instrTemp) {

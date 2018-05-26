@@ -14,13 +14,12 @@ import java.util.*;
 public class LiveAn extends Phase {
 
 	/** Flags */
-	private final int includeNNodes = 1; // number of nodes that seems relevant for printout
-	private final LIVEDEBUG debug = LIVEDEBUG.INFGRAPH; // debug mode
-	private final boolean buildExtendedInferenceGraph = true;
-	private final boolean useOptInterferenceGraph = true;
+	private static final int includeNNodes = 1; // number of nodes that seems relevant for printout
+	private static final LIVEDEBUG debug = LIVEDEBUG.INFGRAPH; // debug mode
+	private static final boolean buildExtendedInferenceGraph = true;
 
 	/** Final interference graph */
-	private ArrayList<InterferenceGraph> interferenceGraphs = new ArrayList<>();
+	static public ArrayList<InterferenceGraph> interferenceGraphs = new ArrayList<>();
 
 	/** Pointer to instructions for each fragment */
 	private HashMap<Fragment, LinkedList<AsmInstr>> fragmentsInstructions;
@@ -66,15 +65,14 @@ public class LiveAn extends Phase {
 			int n = livenessSearchIteration;
 			// dump all
 			colSize.add(0);
-			if (Main.debug == Main.DEBUG.FULL || Main.debug == Main.DEBUG.LIVENESS)
-				for (int i = fg; i < instructions.size() - fg; i++) {
-					AsmInstr instr = instructions.get(i);
-					String msg = " | " + instr.in().toString() + " "
-						+ instr.out().toString() + " "
-						+ instr.defs().toString();
-					dumpTable.get(i - fg).add(msg);
-					colSize.set(n, Math.max(colSize.get(n), msg.length()));
-				}
+			for (int i = fg; i < instructions.size() - fg; i++) {
+				AsmInstr instr = instructions.get(i);
+				String msg = " | " + instr.in().toString() + " "
+					+ instr.out().toString() + " "
+					+ instr.defs().toString();
+				dumpTable.get(i - fg).add(msg);
+				colSize.set(n, Math.max(colSize.get(n), msg.length()));
+			}
 			n++;
 			livenessSearchIteration = n;
 		}
@@ -112,18 +110,18 @@ public class LiveAn extends Phase {
 
 	/** Print functions */
 
-	private void printFragmentInstr(LinkedList<AsmInstr> instructions) {
+	public static void printInstructions(LinkedList<AsmInstr> instructions) {
 		for (AsmInstr instr : instructions) {
 			System.out.format("%1$-18s %2$-18s\n", instr + " ",
-				(instr.in().size() > includeNNodes ? "# I:" + instr.in().toString() : "") +
+				(instr.in().size() > includeNNodes ? "% I:" + instr.in().toString() : "") +
 					(instr.out().size() > includeNNodes ?
-						(instr.in().size() > includeNNodes ? "" : "#") +
+						(instr.in().size() > includeNNodes ? "" : "%") +
 							" O:" + instr.out().toString() + " " : ""));
 		}
 	}
 
 
-	private void printFragmentInterferenceGraph(InterferenceGraph graph, String fragmentName) {
+	public static void printFragmentInterferenceGraph(InterferenceGraph graph, String fragmentName) {
 		if (debug == LIVEDEBUG.INFGRAPH) {
 			String title = "==== INTERFERENCE GRAPH [ " + fragmentName + " ] ====";
 			System.out.println(title);
@@ -135,12 +133,12 @@ public class LiveAn extends Phase {
 
 	/** Main logic of liveness analysis */
 
-	private void buildExtendedInterferenceGraph() {
-		InterferenceGraph fragmentInterferenceGraph = new InterferenceGraph(instructions, useOptInterferenceGraph);
+	private void createInterferenceGraph(CodeFragment codeFragment, LinkedList<AsmInstr> instructions) {
+		InterferenceGraph fragmentInterferenceGraph = new InterferenceGraph(codeFragment, instructions);
 		interferenceGraphs.add(fragmentInterferenceGraph);
 	}
 
-	private void getBrachSuccessors(AsmInstr instr) {
+	private static void getBrachSuccessors(AsmInstr instr) {
 		for (Label label : instr.jumps()) {
 			AsmInstr labelInstr = AsmGen.labelInstructions().get(label);
 			instr.succ().add(AsmGen.labelInstructions().get(label));
@@ -148,41 +146,38 @@ public class LiveAn extends Phase {
 		}
 	}
 
-	private void getSuccessors(AsmInstr instr, AsmInstr directSucc) {
+	private static void getSuccessors(AsmInstr instr, AsmInstr directSucc) {
 		getBrachSuccessors(instr);
 		instr.succ().add(directSucc);
 		directSucc.pred().add(instr);
 	}
 
-	public void buildInterferenceGraph(LinkedList<AsmInstr> fragmentInstructions) {
-		this.instructions = fragmentInstructions;
-		colSize.clear();
-		dumpTable.clear();
+	public static void calculateInterferece(LinkedList<AsmInstr> instructions) {
+//		colSize.clear();
+//		dumpTable.clear();
+//		colSize.add(0);
 
 		// get successors/predecessors
-		colSize.add(0);
 		int fg = (AsmGen.addFragmentComment) ? 1 : 0;
 		for (int i = fg; i < instructions.size() - fg; i++) {
 			AsmInstr instr = instructions.get(i);
-			// skip comments
-			if (!instr.toString().startsWith("%")) {
-				// add successor/predecessor
-				if (i < instructions.size() - 2) {
-					getSuccessors(instr, instructions.get(i + 1));
-				} else {
-					getBrachSuccessors(instr);
-				}
-
-				dumpTable.add(new ArrayList<>());
-				dumpTable.get(dumpTable.size() - 1).add(instr.toString());
-				colSize.set(0, Math.max(colSize.get(0), instructions.get(i).toString().length()));
+			// TODO: smarter skipping comments
+			// add successor/predecessor
+			if (i < instructions.size() - 2) {
+				getSuccessors(instr, instructions.get(i + 1));
+			} else {
+				getBrachSuccessors(instr);
 			}
+
+//			dumpTable.add(new ArrayList<>());
+//			dumpTable.get(dumpTable.size() - 1).add(instr.toString());
+//			colSize.set(0, Math.max(colSize.get(0), instructions.get(i).toString().length()));
 		}
 
 
 		Set<Temp> differenceOutDef = new HashSet<>();
 		boolean changes = true;
-		livenessSearchIteration = 1;
+//		livenessSearchIteration = 1;
 		while (changes) {
 			for (int i = instructions.size() - fg - 1; i >= 0; i--) {
 				AsmInstr instr = instructions.get(i);
@@ -221,17 +216,19 @@ public class LiveAn extends Phase {
 				if (i == instructions.size() - fg - 1)
 					changes = false;
 			}
-			dumpRememberColumn();
+//			dumpRememberColumn();
 		}
-		dumpLivenessTable();
-		dumpInstructions();
-		if (buildExtendedInferenceGraph) buildExtendedInterferenceGraph();
+//		dumpLivenessTable();
+//		dumpInstructions();
 	}
 
 	public void livenessAnalysis(HashMap<Fragment, LinkedList<AsmInstr>> fragmentsInstructions) {
 		this.fragmentsInstructions = fragmentsInstructions;
-		for (LinkedList<AsmInstr> instructions : this.fragmentsInstructions.values()) {
-			buildInterferenceGraph(instructions);
+		for (Map.Entry<Fragment, LinkedList<AsmInstr>> fragment : fragmentsInstructions.entrySet()) {
+			instructions = fragment.getValue();
+			calculateInterferece(instructions);
+			if (buildExtendedInferenceGraph)
+				createInterferenceGraph((CodeFragment) fragment.getKey(), instructions);
 		}
 	}
 
@@ -241,17 +238,19 @@ public class LiveAn extends Phase {
 			if (fragmentsInstructions != null) {
 				int i = 0;
 				for (Map.Entry<Fragment, LinkedList<AsmInstr>> entry : fragmentsInstructions.entrySet()) {
-					printFragmentInstr(entry.getValue());
+					printInstructions(entry.getValue());
 					printFragmentInterferenceGraph(interferenceGraphs.get(i++),
 						((CodeFragment) entry.getKey()).frame.label.name);
 				}
 			} else if (instructions != null) {
-				printFragmentInstr(instructions);
+				printInstructions(instructions);
 				printFragmentInterferenceGraph(interferenceGraphs.get(0), "");
 			}
 		}
 		super.close();
 	}
 
-	public static void reset() {}
+	public static void reset() {
+		interferenceGraphs = new ArrayList<>();
+	}
 }

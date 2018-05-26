@@ -5,6 +5,8 @@ import compiler.phases.frames.Label;
 import compiler.phases.frames.Temp;
 import compiler.phases.imcgen.ImcVisitor;
 import compiler.phases.imcgen.code.*;
+import compiler.phases.lincode.CodeFragment;
+import compiler.phases.lincode.Fragment;
 
 import java.util.Vector;
 
@@ -18,13 +20,18 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 	private boolean isConst8bit = false;
 	private boolean isPositiveConst = false;
 	private MemType memType = MemType.NONE;
+	private CodeFragment fragment;
 
 	private enum MemType {NONE, LOAD, STORE}
 
 	private StringBuilder instrBuilder = new StringBuilder();
 
-	public static int nRegs = 8;
-	public static int FPreg = 254;
+	public InstrEvaluator(CodeFragment cf) {
+		fragment = cf;
+	}
+
+	public static int nRegs = Main.nReg;
+//	public static int FPreg = 251;
 
 	/** Debug dump */
 	private void dump(ImcInstr node, String msg) {
@@ -124,7 +131,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 				long value = ((ImcCONST) binOp.sndExpr).value;
 				instrBuilder.append(value);
 				AsmGen.removeLast();
-				if(value == 0 && uses.size() == 1 && defs.size() == 1){
+				if (value == 0 && uses.size() == 1 && defs.size() == 1) {
 					AsmGen.add(new AsmMOVE(instrBuilder.toString(), uses, defs, null));
 					return result;
 				}
@@ -254,7 +261,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 			instrBuilder.setLength(0);
 			Vector<Temp> uses = new Vector<>();
 			uses.add(tempArg.temp);
-			instrBuilder.append("STO `s0, $254, ").append(offset);
+			instrBuilder.append("STO `s0, ").append(Main.FPreg).append(", ").append(offset);
 			AsmGen.add(new AsmOPER(instrBuilder.toString(), uses, null, null));
 			offset += 8;
 		}
@@ -324,10 +331,32 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 			instrBuilder.append(((ImcNAME) memExpr).label.name).append(", 0");
 		} else if (mem.addr instanceof ImcBINOP) {
 			AsmOPER addrOper = (AsmOPER) AsmGen.removeLast();
+			int nUses = uses.size();
+//			uses = new Vector<>();
 			uses.addAll(addrOper.uses());
-			String[] operands = addrOper.toString().split(" ");
-			instrBuilder.append(operands[2]).append(" ");
-			instrBuilder.append(operands[3]);
+//			instrBuilder.append(operands[2]).append(" ");
+			if (addrOper.uses().size() == 2) {
+				String[] operands = addrOper.toString().split(" ");
+				if(operands[2].length() > 1 && operands[2].startsWith("T") && Long.parseLong(operands[2].substring(1,2)) == fragment.FP.temp){
+					operands[2] = Main.FPreg+" ";
+					uses.remove(uses.size()-2);
+					instrBuilder.append(operands[2]).append(", `s").append(nUses);
+				} else {
+					instrBuilder.append("`s").append(nUses).append(", `s").append(nUses + 1);
+				}
+			} else if (addrOper.uses().size() == 1) {
+				String[] operands = addrOper.toString().split(" ");
+				if(operands[2].length() > 1 && operands[2].startsWith("T") && Long.parseLong(operands[2].substring(1,2)) == fragment.FP.temp){
+					operands[2] = Main.FPreg+" ";
+					uses.remove(uses.size()-1);
+				}
+
+				instrBuilder.append(operands[2].startsWith("T") ? "`s" + nUses + ", " : operands[2]).
+					append(operands[3].startsWith("T") ? " `s" + nUses : operands[3]);
+			} else {
+				String[] operands = addrOper.toString().split(" ");
+				instrBuilder.append(operands[2]).append(" ").append(operands[3]);
+			}
 		} else {
 			// worst case - general store
 			instrBuilder.append("`s").append(uses.size()).append(", 0");
@@ -358,7 +387,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 			} else if (move.src instanceof ImcCALL) {
 				// return from function
 				result = (ImcTEMP) move.src.accept(this, null);
-				AsmGen.add(new AsmOPER("LDO `d0, $" + FPreg + ", 0", null, defs, null));
+				AsmGen.add(new AsmOPER("LDO `d0, " + Main.FPreg + ", 0", null, defs, null));
 			} else if (move.src instanceof ImcNAME) {
 				AsmGen.add(new AsmOPER("LDA `d0, " + ((ImcNAME) move.src).label.name, null, defs, null));
 			} else if (move.src instanceof ImcBINOP || move.src instanceof ImcUNOP || move.src instanceof ImcMEM) {

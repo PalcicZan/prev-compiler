@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.9.2](https://github.com/PalcicZan/prev-compiler/tree/v0.9.2) (26.05.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.9.1...v0.9.2)
+
+**Implemented enhancements:**
+
+- Register allocation [\#10](https://github.com/PalcicZan/prev-compiler/issues/10)
+
 ## [v0.9.1](https://github.com/PalcicZan/prev-compiler/tree/v0.9.1) (20.05.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.9.0...v0.9.1)
 

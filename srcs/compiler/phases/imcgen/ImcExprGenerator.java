@@ -101,9 +101,8 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 	public ImcExpr visit(AbsDelExpr delExpr, Stack<Frame> visArg) {
 		ImcExpr imcDelExpr = delExpr.expr.accept(this, null);
 		if (ImcGen.useAllocFun) {
-			Label label = new Label("_free");
+			Label label = new Label("free");
 			Vector<ImcExpr> args = new Vector<>();
-			args.add(new ImcNAME(label));
 			if (ImcGen.useSLinGlFunCall) args.add(new ImcCONST(0));
 			args.add(imcDelExpr);
 			imcDelExpr = new ImcCALL(label, args);
@@ -118,8 +117,7 @@ public class ImcExprGenerator implements AbsVisitor<ImcExpr, Stack<Frame>> {
 		if (ImcGen.useAllocFun) {
 			Long sizeToAlloc = SemAn.descType().get(newExpr.type).actualType().size();
 			Vector<ImcExpr> args = new Vector<>();
-			Label label = new Label("_malloc");
-			args.add(new ImcNAME(label));
+			Label label = new Label("malloc");
 			if (ImcGen.useSLinGlFunCall) args.add(new ImcCONST(0));
 			args.add(new ImcCONST(sizeToAlloc));
 			imcNewExpr = new ImcCALL(label, args);

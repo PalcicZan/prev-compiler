@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.9.3](https://github.com/PalcicZan/prev-compiler/tree/v0.9.3) (02.06.2018)
+[Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.9.2...v0.9.3)
+
+**Implemented enhancements:**
+
+- Putting it all together [\#11](https://github.com/PalcicZan/prev-compiler/issues/11)
+
 ## [v0.9.2](https://github.com/PalcicZan/prev-compiler/tree/v0.9.2) (26.05.2018)
 [Full Changelog](https://github.com/PalcicZan/prev-compiler/compare/v0.9.1...v0.9.2)
 

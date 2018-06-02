@@ -13,6 +13,7 @@ import compiler.phases.lincode.*;
 import compiler.phases.asmgen.*;
 import compiler.phases.liveness.*;
 import compiler.phases.regalloc.*;
+import compiler.phases.finalize.*;
 
 /**
  * The compiler.
@@ -22,17 +23,24 @@ import compiler.phases.regalloc.*;
 public class Main {
 
 	public enum DEBUG {
-		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, ASMGEN, LIVENESS, REGALLOC, FULL
+		NONE, LEXAN, SYNAN, SEMAN, FRAMES, IMCGEN, LINCODE, ASMGEN, LIVENESS, REGALLOC, FINALIZE, FULL
 	}
 
 	public static DEBUG debug = DEBUG.NONE;
 
 	/** All valid phases of the compiler. */
-	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode|asmgen|liveness|regalloc";
+	private static final String phases = "lexan|synan|abstr|seman|frames|imcgen|lincode|asmgen|liveness|regalloc|finalize";
 
 	/** Number of available physical registers. */
 	public static int nReg = 8;
-	public static String FPreg = "$254";
+	public static boolean useMmixAliases = true;
+	public static String SPReg = "$250";
+	public static String FPReg = "$251";
+	public static String HPReg = "$252";
+	public static String SP = useMmixAliases ? "SP" : SPReg;
+	public static String FP = useMmixAliases ? "FP" : FPReg;
+	public static String HP = useMmixAliases ? "HP" : HPReg;
+	public static String dstSufix = ".mms";
 
 	/** Values of command line arguments. */
 	public static HashMap<String, String> cmdLine = new HashMap<String, String>();
@@ -87,6 +95,12 @@ public class Main {
 							cmdLine.put("--xsl", argv[argc].replaceFirst("^[^=]*=", ""));
 							continue;
 						}
+
+					}if (argv[argc].matches("--dst-file-name=.*")) {
+						if (cmdLine.get("--dst-file-name") == null) {
+							cmdLine.put("--dst-file-name", argv[argc].replaceFirst("^[^=]*=", ""));
+							continue;
+						}
 					}
 					Report.warning("Command line argument '" + argv[argc] + "' ignored.");
 				} else {
@@ -102,7 +116,7 @@ public class Main {
 				throw new Report.Error("Source file not specified.");
 			}
 			if (cmdLine.get("--dst-file-name") == null) {
-				cmdLine.put("--dst-file-name", cmdLine.get("--src-file-name").replaceFirst("\\.[^./]*$", "") + ".asm");
+				cmdLine.put("--dst-file-name", cmdLine.get("--src-file-name").replaceFirst("\\.[^./]*$", "") + dstSufix);
 			}
 			if (cmdLine.get("--target-phase") == null) {
 				cmdLine.put("--target-phase", phases.replaceFirst("^.*\\|", ""));
@@ -221,6 +235,13 @@ public class Main {
 
 				if (cmdLine.get("--target-phase").equals("regalloc"))
 					break;
+
+				// Finalize compilation.
+				try (Finalize finalize = new Finalize()) {
+					finalize.run();
+				}
+
+				if (progress) Report.info("Finalize phase complete.");
 
 				int endWarnings = Report.numOfWarnings();
 				if (begWarnings != endWarnings)

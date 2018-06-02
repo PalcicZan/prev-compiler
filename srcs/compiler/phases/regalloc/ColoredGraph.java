@@ -70,7 +70,6 @@ public class ColoredGraph extends InterferenceGraph {
 		for (Node n : interferenceGraph.interferenceGraph.values())
 			originalNodes.add(n.t);
 		dump("Number of registers: " + RegAlloc.nReg);
-		LiveAn.printInstructions(instructions);
 		createGraph();
 	}
 
@@ -209,7 +208,7 @@ public class ColoredGraph extends InterferenceGraph {
 		Vector<Temp> defs = new Vector<>();
 		spilledTemp = spilledTemp == null ? spilledNode.t : spilledTemp;
 		defs.add(addrTemp != null ? addrTemp : spilledNode.t);
-		AsmOPER regAddr = new AsmOPER("SUB `d0, " + Main.FPreg + ", " + offset, null, defs, null);
+		AsmOPER regAddr = new AsmOPER("SUB `d0, " + Main.FP + ", " + offset, null, defs, null);
 		Vector<Temp> uses = new Vector<>();
 		defs = new Vector<>();
 		uses.add(addrTemp != null ? addrTemp : spilledNode.t);
@@ -224,7 +223,7 @@ public class ColoredGraph extends InterferenceGraph {
 		if (calcAddr) {
 			Vector<Temp> defs = new Vector<>();
 			defs.add(addrTemp);
-			AsmOPER regAddr = new AsmOPER("SUB `d0, " + Main.FPreg + ", " + offset, null, defs, null);
+			AsmOPER regAddr = new AsmOPER("SUB `d0, " + Main.FP + ", " + offset, null, defs, null);
 			it.add(regAddr);
 		}
 		Vector<Temp> uses = new Vector<>();

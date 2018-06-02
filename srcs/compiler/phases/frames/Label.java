@@ -8,7 +8,7 @@ package compiler.phases.frames;
 public class Label {
 
 	/** The name of a label. */
-	public final String name;
+	public String name;
 
 	/** Counter of anonymous labels. */
 	private static long count = 0;

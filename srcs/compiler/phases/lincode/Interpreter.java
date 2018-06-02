@@ -33,7 +33,7 @@ public class Interpreter {
 	public void execute() {
 
 		HP = 8;
-		// FP = 0x10000000;
+//		 FP = 0x10000000;
 		SP = 0x10000000;
 
 		// Put variables into the memory.

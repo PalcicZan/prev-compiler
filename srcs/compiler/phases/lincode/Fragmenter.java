@@ -251,8 +251,17 @@ public class Fragmenter extends AbsFullVisitor<Object, Object> {
 		ImcCALL imcCallFun = (ImcCALL) ImcGen.exprImCode.get(funName);
 		Vector<ImcExpr> imcExprsArgs = new Vector<>();
 		imcExprsArgs.add(new ImcCONST(0));
+		ImcTEMP temp;
+		ImcMOVE move;
 		for (AbsExpr arg : funName.args.args()) {
-			imcExprsArgs.add((ImcExpr) arg.accept(this, null));
+			ImcExpr imcArg = (ImcExpr) arg.accept(this, null);
+			if (imcArg instanceof ImcNAME) {
+				temp = new ImcTEMP(new Temp());
+				fragmentStmts.add(new ImcMOVE(temp, imcArg));
+				imcExprsArgs.add(temp);
+			} else {
+				imcExprsArgs.add((ImcExpr) arg.accept(this, null));
+			}
 		}
 		ImcCALL newImcCallFun = new ImcCALL(imcCallFun.label, imcExprsArgs);
 		if (useTempCall) {
@@ -292,6 +301,50 @@ public class Fragmenter extends AbsFullVisitor<Object, Object> {
 			result = imcUnExpr;
 		}
 		return result;
+	}
+
+	@Override
+	public Object visit(AbsDelExpr delExpr, Object visArg) {
+		ImcCALL imcCallFun = (ImcCALL) ImcGen.exprImCode.get(delExpr);
+//		Vector<ImcExpr> imcExprsArgs = new Vector<>();
+//		imcExprsArgs.add(new ImcCONST(0));
+//		imcExprsArgs.add((ImcExpr) delExpr.expr.accept(this, null));
+//		ImcCALL newImcCallFun = new ImcCALL(imcCallFun.label, imcExprsArgs);
+		if (useTempCall) {
+			ImcTEMP result = new ImcTEMP(new Temp());
+			fragmentStmts.add(new ImcMOVE(result, imcCallFun));
+			return result;
+		}
+		return imcCallFun;
+	}
+
+	@Override
+	public Object visit(AbsNewExpr newExpr, Object visArg) {
+		ImcCALL imcCallFun = (ImcCALL) ImcGen.exprImCode.get(newExpr);
+
+		Vector<ImcExpr> imcExprsArgs = new Vector<>();
+		imcExprsArgs.add(new ImcCONST(0));
+		ImcExpr imcArg = (ImcExpr) newExpr.type.accept(this, null);
+		ImcTEMP temp;
+		if (imcArg instanceof ImcNAME) {
+			temp = new ImcTEMP(new Temp());
+			fragmentStmts.add(new ImcMOVE(temp, imcArg));
+			imcExprsArgs.add(temp);
+		} else if (imcArg != null){
+			imcExprsArgs.add(imcArg);
+		}
+		ImcCALL newImcCallFun = new ImcCALL(imcCallFun.label, imcExprsArgs);
+		if (useTempCall) {
+			ImcTEMP result = new ImcTEMP(new Temp());
+			fragmentStmts.add(new ImcMOVE(result, newImcCallFun));
+			return result;
+		}
+		return imcCallFun;
+	}
+
+	@Override
+	public Object visit(AbsExprStmt exprStmt, Object visArg) {
+		return super.visit(exprStmt, visArg);
 	}
 
 	@Override

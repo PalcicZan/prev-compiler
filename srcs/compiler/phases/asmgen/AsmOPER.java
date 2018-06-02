@@ -112,6 +112,9 @@ public class AsmOPER extends AsmInstr {
 		return instruction;
 	}
 
+	public String getInstr() {
+		return instr;
+	}
 
 	@Override
 	public String toString(boolean instr) {

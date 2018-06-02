@@ -6,6 +6,7 @@ import compiler.phases.frames.Label;
 import compiler.phases.imcgen.code.ImcStmt;
 import compiler.phases.lincode.CodeFragment;
 import compiler.phases.lincode.Fragment;
+import compiler.phases.regalloc.InstrLogger;
 
 import java.util.*;
 
@@ -63,15 +64,15 @@ public class AsmGen extends Phase {
 				currFrag = fragment;
 				fragmentInstructions.put(currFrag, new LinkedList<>());
 				if (addFragmentComment) {
-					titleComment = "% ====== " + ((CodeFragment) fragment).frame.label.name + " ======";
+					titleComment = InstrLogger.comment("Fun body [" + ((CodeFragment) fragment).frame.label.name + "]");
 					AsmGen.add(new AsmOPER(titleComment, null, null, null));
 				}
 				for (ImcStmt stmt : ((CodeFragment) fragment).stmts()) {
-					stmt.accept(new InstrEvaluator((CodeFragment)fragment), null);
+					stmt.accept(new InstrEvaluator((CodeFragment) fragment), null);
 				}
 				if (addFragmentComment) {
-					String endComment = new String(new char[titleComment.length()-2]).replace("\0", "=");
-					AsmGen.add(new AsmOPER("% "+endComment, null, null, null));
+					String endComment = InstrLogger.comment("");
+					AsmGen.add(new AsmOPER(endComment, null, null, null));
 				}
 			}
 		}

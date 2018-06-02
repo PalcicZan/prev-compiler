@@ -31,7 +31,6 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 	}
 
 	public static int nRegs = Main.nReg;
-//	public static int FPreg = 251;
 
 	/** Debug dump */
 	private void dump(ImcInstr node, String msg) {
@@ -115,23 +114,32 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 		}
 		// load value in case of mem in subexpression
 
+		boolean isAddr = false;
 		// first operand must be stored in register/name
 		if (fstExprTemp instanceof ImcTEMP) {
 			instrBuilder.append("`s0, ");
 			uses.add(((ImcTEMP) fstExprTemp).temp);
 		} else if (fstExprTemp instanceof ImcNAME) {
-			instrBuilder.append(((ImcNAME) fstExprTemp).label.name).append(", ");
+			Temp loadAddr = new Temp();
+			Vector<Temp> defAddr = new Vector<>();
+			defAddr.add(loadAddr);
+			AsmGen.add(new AsmOPER("LDA `d0, " + ((ImcNAME) fstExprTemp).label.name, null, defAddr, null));
+//			instrBuilder.append(((ImcNAME) fstExprTemp).label.name).append(", ");
+			uses.add(loadAddr);
+			instrBuilder.append("`s0, ");
+			isAddr = true;
 		}
 
 		// second operand
-		if (binOp.sndExpr instanceof ImcCONST && isConst8bit) {
+		if (binOp.sndExpr instanceof ImcCONST && isConst8bit && !isAddr) {
 			// is second operand 16-bit constant
 			if (isPositiveConst) {
 				// use constant value
 				long value = ((ImcCONST) binOp.sndExpr).value;
 				instrBuilder.append(value);
 				AsmGen.removeLast();
-				if (value == 0 && uses.size() == 1 && defs.size() == 1) {
+				if (value == 0 && uses.size() == 1 && defs.size() == 1 && (binOp.oper == ImcBINOP.Oper.ADD ||
+					binOp.oper == ImcBINOP.Oper.SUB)) {
 					AsmGen.add(new AsmMOVE(instrBuilder.toString(), uses, defs, null));
 					return result;
 				}
@@ -185,7 +193,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 				AsmGen.add(new AsmOPER(instrBuilder.toString(), uses, defs, null));
 				break;
 			case MOD:
-				instrBuilder.append("SET `d0, rR");
+				instrBuilder.append("GET `d0, rR");
 				AsmGen.add(new AsmOPER(instrBuilder.toString(), null, defs, null));
 				break;
 		}
@@ -261,7 +269,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 			instrBuilder.setLength(0);
 			Vector<Temp> uses = new Vector<>();
 			uses.add(tempArg.temp);
-			instrBuilder.append("STO `s0, ").append(Main.FPreg).append(", ").append(offset);
+			instrBuilder.append("STO `s0, ").append(Main.SP).append(", ").append(offset);
 			AsmGen.add(new AsmOPER(instrBuilder.toString(), uses, null, null));
 			offset += 8;
 		}
@@ -328,31 +336,34 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 		// get address
 		if (mem.addr instanceof ImcNAME) {
 			// direct access
-			instrBuilder.append(((ImcNAME) memExpr).label.name).append(", 0");
+			Temp loadAddr = new Temp();
+			Vector<Temp> defAddr = new Vector<>();
+			defAddr.add(loadAddr);
+			AsmGen.add(new AsmOPER("LDA `d0, " + ((ImcNAME) memExpr).label.name, null, defAddr, null));
+			uses.addAll(defAddr);
+			instrBuilder.append("`s").append(memType == MemType.LOAD ? "0" : "1").append(", 0");
 		} else if (mem.addr instanceof ImcBINOP) {
 			AsmOPER addrOper = (AsmOPER) AsmGen.removeLast();
 			int nUses = uses.size();
-//			uses = new Vector<>();
 			uses.addAll(addrOper.uses());
-//			instrBuilder.append(operands[2]).append(" ");
 			if (addrOper.uses().size() == 2) {
 				String[] operands = addrOper.toString().split(" ");
-				if(operands[2].length() > 1 && operands[2].startsWith("T") && Long.parseLong(operands[2].substring(1,2)) == fragment.FP.temp){
-					operands[2] = Main.FPreg+" ";
-					uses.remove(uses.size()-2);
+				if (operands[2].length() > 1 && operands[2].startsWith("T") && Long.parseLong(operands[2].substring(1, 2)) == fragment.FP.temp) {
+					operands[2] = Main.FP;
+					uses.remove(uses.size() - 2);
 					instrBuilder.append(operands[2]).append(", `s").append(nUses);
 				} else {
 					instrBuilder.append("`s").append(nUses).append(", `s").append(nUses + 1);
 				}
 			} else if (addrOper.uses().size() == 1) {
 				String[] operands = addrOper.toString().split(" ");
-				if(operands[2].length() > 1 && operands[2].startsWith("T") && Long.parseLong(operands[2].substring(1,2)) == fragment.FP.temp){
-					operands[2] = Main.FPreg+" ";
-					uses.remove(uses.size()-1);
+				if (operands[2].length() > 1 && operands[2].startsWith("T") && Long.parseLong(operands[2].substring(1, 2)) == fragment.FP.temp) {
+					operands[2] = Main.FP;
+					uses.remove(uses.size() - 1);
 				}
 
-				instrBuilder.append(operands[2].startsWith("T") ? "`s" + nUses + ", " : operands[2]).
-					append(operands[3].startsWith("T") ? " `s" + nUses : operands[3]);
+				instrBuilder.append(operands[2].startsWith("T") ? "`s" + nUses : operands[2]).
+					append(operands[3].startsWith("T") ? ", `s" + nUses : ", " + operands[3]);
 			} else {
 				String[] operands = addrOper.toString().split(" ");
 				instrBuilder.append(operands[2]).append(" ").append(operands[3]);
@@ -387,7 +398,7 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 			} else if (move.src instanceof ImcCALL) {
 				// return from function
 				result = (ImcTEMP) move.src.accept(this, null);
-				AsmGen.add(new AsmOPER("LDO `d0, " + Main.FPreg + ", 0", null, defs, null));
+				AsmGen.add(new AsmOPER("LDO `d0, " + Main.SP + ", 0", null, defs, null));
 			} else if (move.src instanceof ImcNAME) {
 				AsmGen.add(new AsmOPER("LDA `d0, " + ((ImcNAME) move.src).label.name, null, defs, null));
 			} else if (move.src instanceof ImcBINOP || move.src instanceof ImcUNOP || move.src instanceof ImcMEM) {
@@ -425,11 +436,11 @@ public class InstrEvaluator implements ImcVisitor<Object, Object> {
 		Vector<Label> jumps = new Vector<>();
 		ImcTEMP condVar = (ImcTEMP) cjump.cond.accept(this, null);
 		uses.add(condVar.temp);
-		jumps.add(cjump.negLabel);
-		AsmGen.add(new AsmOPER("BNZ `s0, " + cjump.negLabel.name, uses, null, jumps));
-		jumps = new Vector<>();
 		jumps.add(cjump.posLabel);
-		AsmGen.add(new AsmOPER("JMP " + cjump.posLabel.name, null, null, jumps));
+		AsmGen.add(new AsmOPER("BNZ `s0, " + cjump.posLabel.name, uses, null, jumps));
+		jumps = new Vector<>();
+		jumps.add(cjump.negLabel);
+		AsmGen.add(new AsmOPER("JMP " + cjump.negLabel.name, null, null, jumps));
 		return null;
 	}
 
